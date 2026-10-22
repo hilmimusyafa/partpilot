@@ -35,3 +35,7 @@ Buka [http://localhost:3000](http://localhost:3000) di browser.
 ```bash
 npm run build:web
 ```
+
+## Backend dan demo
+
+Backend FastAPI/PostgreSQL ada di `backend/`. Integrasi memakai data sintetis, vendor simulator, dan pilihan manajer tanpa eksekusi pembelian/mutasi. Lihat `docs/DEMO_DEPLOYMENT.md` untuk menjalankan demo dan reset.
