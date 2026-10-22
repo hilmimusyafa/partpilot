@@ -23,6 +23,7 @@ export type Scope = { warehouse_id: string; status: string; item_code?: string; 
 export type Run = {
   id: string; version: number; status: string; quantity: string;
   transport?: "simulator" | "whatsapp";
+  exchanges?: unknown[];
   identity: { brand: string; base: string; suffix: string };
   availability: { origin: Scope; alternatives: Scope[]; complete: boolean };
   vendors: { vendor_id: string; outcome: string; counteroffers_used: number; quote: Quote | null; initial_quote: Quote | null; eligible: boolean; ineligible_reasons?: string[] }[];
@@ -76,6 +77,7 @@ export type WhatsAppConversation = {
   id: string; run_id: string; vendor_id: string; status: string;
   fields: Record<string, unknown>; missing_fields: string[];
   messages: { direction: string; text: string; created_at: string; status?: string }[];
+  unmatched_messages?: { direction: string; text: string; created_at: string; status?: string; routing_reason?: string }[];
   counteroffers_used: number; followups_used: number;
 };
 export type WhatsAppConversations = { conversations: WhatsAppConversation[] };

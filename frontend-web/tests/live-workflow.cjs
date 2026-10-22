@@ -50,7 +50,7 @@ async function testLiveWorkflow(browser, url, fixture, artifacts) {
     else if (endpoint === '/whatsapp/status') payload = { connection: 'connected', can_start: true, recipients: [] };
     else if (endpoint === '/whatsapp/conversations') {
       if (chatFailure) { chatFailure = false; return route.fulfill({ status: 503, json: { error: { message: 'Chat temporarily unavailable' } } }); }
-      payload = { conversations: [{ id: 'closed-history', run_id: 'run', vendor_id: 'WA-OLD', status: 'closed', fields: {}, missing_fields: [], messages: [{ direction: 'in', text: 'Balasan lama', created_at: '2025-01-01T00:00:00Z' }], followups_used: 0, counteroffers_used: 0 }] };
+      payload = { conversations: [{ id: 'unmatched-active', run_id: 'run', vendor_id: 'WA-UNMATCHED', status: 'no_stock', fields: {}, missing_fields: ['unit_price'], messages: [], unmatched_messages: [{ direction: 'in', text: 'Penawaran lama belum terhubung', created_at: '2025-01-01T00:00:00Z', routing_reason: 'ambiguous' }], followups_used: 0, counteroffers_used: 0 }, { id: 'closed-history', run_id: 'run', vendor_id: 'WA-OLD', status: 'closed', fields: {}, missing_fields: [], messages: [{ direction: 'in', text: 'Balasan lama', created_at: '2025-01-01T00:00:00Z' }], followups_used: 0, counteroffers_used: 0 }] };
     } else if (endpoint === '/demo/sourcing-runs/run/purchase-order') payload = { purchase_order: decision?.option_id.startsWith('vendor:') ? { id: 'live-po', number: 'LIVE-MOCK-PO', quantity: '6', total: '109000' } : null };
     else throw new Error(`Unexpected live fixture API: ${endpoint}`);
     assert(payload !== undefined, `Missing fixture ${endpoint}`);
@@ -61,6 +61,10 @@ async function testLiveWorkflow(browser, url, fixture, artifacts) {
     const vendors = page.getByRole('region', { name: 'Penawaran vendor', exact: true });
     await vendors.getByText('Belum dapat dipilih', { exact: true }).waitFor();
     await page.getByText('Percakapan ini sudah ditutup.', { exact: false }).waitFor();
+    const unmatched = page.locator('#conversation-unmatched-active');
+    await unmatched.getByText('Pesan diterima, tetapi belum terhubung ke permintaan ini').waitFor();
+    await unmatched.getByText('Penawaran lama belum terhubung', { exact: true }).waitFor();
+    assert.equal(await unmatched.getByText(/Belum lengkap:/).count(), 0, 'No-stock result must not demand quote completion');
     await page.clock.runFor(5100);
     assert.equal(prepares.length, 0, 'Unchanged version must not continually create comparisons');
     missingVersionOnce = true;
@@ -121,7 +125,7 @@ async function testLiveWorkflow(browser, url, fixture, artifacts) {
 }
 
 async function testWoLifecycle(browser, url, fixture, artifacts) {
-  const { config, baseSession } = fixture;
+  const { config, baseSession, baseRun } = fixture;
   const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
   const page = await context.newPage();
   page.setDefaultTimeout(10000);
@@ -139,7 +143,8 @@ async function testWoLifecycle(browser, url, fixture, artifacts) {
         submits++;
         if (submitFailure) { submitFailure = false; return route.fulfill({ status: 503, json: { error: { message: 'Pengajuan belum diterima. Coba lagi.' } } }); }
         session = { ...session, version: 2, state: 'queued' }; payload = session;
-      } else if (endpoint === '/work-orders/created-wo/answers') { session = { ...session, version: 4, state: 'processing', questions: [] }; payload = session; }
+      } else if (endpoint === '/demo/sourcing-runs') payload = { ...baseRun, id: 'created-run', status: 'fulfilled_source', vendors: [] };
+      else if (endpoint === '/work-orders/created-wo/answers') { session = { ...session, version: 4, state: 'processing', questions: [] }; payload = session; }
       else throw new Error(`Forbidden WO fixture write ${endpoint}`);
     } else if (endpoint === '/demo/config') payload = config;
     else if (endpoint === '/work-orders/created-wo' || endpoint === '/demo/orders/created-wo') payload = session;
@@ -161,7 +166,11 @@ async function testWoLifecycle(browser, url, fixture, artifacts) {
     await page.getByRole('heading', { name: 'Work order berhasil diajukan' }).waitFor();
     assert.equal(submits, 2);
     await page.screenshot({ path: path.join(artifacts, 'wo-submit-success.png'), fullPage: true });
-    await page.getByRole('link', { name: 'Ke Meja manajer', exact: true }).click();
+    assert.equal(await page.getByRole('dialog').getByRole('link', { name: 'Ke Meja manajer', exact: true }).count(), 0);
+    await page.getByRole('button', { name: 'Lanjutkan klarifikasi', exact: true }).click();
+    assert.match(page.url(), /technician\/clarification/);
+    await page.getByText(/Identifikasi sedang berjalan/).waitFor();
+    await page.getByRole('navigation', { name: 'Menu utama' }).getByRole('link', { name: 'Meja manajer', exact: true }).click();
     await page.getByRole('link', { name: 'Pantau identifikasi →', exact: true }).waitFor();
     assert.equal(await page.getByRole('link', { name: 'Buka stok & perbandingan →', exact: true }).count(), 0);
     orderReadFailure = true;
@@ -179,7 +188,7 @@ async function testWoLifecycle(browser, url, fixture, artifacts) {
     await page.getByRole('link', { name: 'Selesaikan identifikasi terlebih dahulu' }).waitFor();
     session = { ...session, version: 5, state: 'identified', questions: [] };
     await page.clock.runFor(5100);
-    await page.getByRole('button', { name: 'Cek stok & sumber gudang', exact: true }).waitFor();
+    await page.getByText('Stok gudang asal mencukupi. Vendor tidak dihubungi. Ini belum berarti mesin selesai diperbaiki.').waitFor();
     await page.goto(`${url}/manager/`);
     await page.getByRole('link', { name: 'Buka stok & perbandingan →', exact: true }).waitFor();
     // A newly created/queued WO also gets an explicit confirmation before navigation.

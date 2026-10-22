@@ -145,7 +145,8 @@ async function main() {
     await context.close();
     const { testLiveWorkflow, testWoLifecycle } = require('./live-workflow.cjs');
     await testLiveWorkflow(browser, url, { config, baseSession, baseRun, quote, option }, artifacts);
-    await testWoLifecycle(browser, url, { config, baseSession }, artifacts);
+    await testWoLifecycle(browser, url, { config, baseSession, baseRun }, artifacts);
+    await require('./auto-whatsapp.cjs').testAutoWhatsApp(browser, url, { config, baseSession, baseRun }, artifacts);
   } finally { await browser.close(); }
 }
 main().catch(error => { console.error(error); process.exitCode = 1; }).finally(() => server.close());

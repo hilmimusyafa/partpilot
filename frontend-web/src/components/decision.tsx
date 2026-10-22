@@ -1,5 +1,5 @@
 "use client";
-import { Suspense, useEffect, useEffectEvent, useState } from "react";
+import { Suspense, useEffect, useEffectEvent, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { CheckCircle2, LoaderCircle } from "lucide-react";
@@ -43,10 +43,13 @@ function DecisionContent({ sessionId }: { sessionId: string | null }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [whatsApp, setWhatsApp] = useState<WhatsAppStatus | null>(null);
+  const [automationError, setAutomationError] = useState<"stock" | "whatsapp" | null>(null);
+  const stockAttempt = useRef("");
+  const whatsappAttempt = useRef("");
   const [conversations, setConversations] = useState<WhatsAppConversation[]>([]);
   const live = useLiveComparison({ run, comparison, selected, confirm, busy, setRun, setComparison, setSelected, setConversations, refresh });
   const readWorkflow = useEffectEvent(() => ({ run, comparison, selected }));
-  const readyForWhatsApp = whatsApp?.can_start && (whatsApp.connection === "connected" || whatsApp.connection === "open");
+  const incompleteWhatsAppStart = run?.transport === "whatsapp" && !!whatsApp?.recipients.length && whatsApp.recipients.some(recipient => !run.vendors.some(vendor => vendor.vendor_id === recipient.id));
   const waitingForVendors = run?.transport === "whatsapp" && (run.vendors.length === 0 || run.vendors.some(vendor => ["waiting", "partial", "pending"].includes(vendor.outcome) || vendor.ineligible_reasons?.includes("negotiation_pending")));
   useEffect(() => {
     let active = true;
@@ -73,32 +76,45 @@ function DecisionContent({ sessionId }: { sessionId: string | null }) {
   }, [sessionId]);
   useEffect(() => {
     let active = true;
-    api<WhatsAppStatus>("/whatsapp/status").then(value => { if (active) setWhatsApp(value); }).catch(() => { /* Status page provides connection errors; simulator is still available. */ });
+    api<WhatsAppStatus>("/whatsapp/status").then(value => { if (active) setWhatsApp(value); }).catch(() => { if (active) setWhatsApp({ connection: "unknown", can_start: false, enabled: false, qr_data_url: null, recipients: [], blocked_reason: "Status koneksi WhatsApp belum dapat dimuat." }); });
     return () => { active = false; };
   }, []);
   async function checkStock() {
-    if (!session || busy) return;
-    setBusy(true); setError("");
+    if (!session || busy || run || session.state !== "identified") return;
+    stockAttempt.current = `${session.id}-${session.version}`;
+    setBusy(true); setError(""); setAutomationError(null);
     try { setRun(await api<Run>("/demo/sourcing-runs", { session_id: session.id, expected_version: session.version }, `source-${session.id}-${session.version}`)); }
-    catch (e) { setError(errorMessage(e)); } finally { setBusy(false); }
+    catch (e) { setError(errorMessage(e)); setAutomationError("stock"); } finally { setBusy(false); }
   }
-  async function startWhatsApp() {
-    if (!run || busy || !readyForWhatsApp) return;
-    setBusy(true); setError("");
+  async function startWhatsApp(refreshStatus = false) {
+    if (!run || busy || selected || run.status === "fulfilled_source") return;
+    whatsappAttempt.current = run.id;
+    setBusy(true); setError(""); setAutomationError(null);
     try {
+      const status = refreshStatus ? await api<WhatsAppStatus>("/whatsapp/status") : whatsApp;
+      if (status) setWhatsApp(status);
+      if (!status?.can_start || status.connection !== "connected") throw new Error(status?.blocked_reason || "WhatsApp belum terhubung. Minta pengelola demo memeriksa koneksi, lalu coba lagi.");
       const chats = await api<WhatsAppConversations>(`/whatsapp/runs/${run.id}/start`, {});
       setConversations(chats.conversations.filter(chat => chat.run_id === run.id));
       setRun(await api<Run>(`/demo/sourcing-runs/${run.id}`));
       setComparison(null);
-    } catch (e) { setError(errorMessage(e)); } finally { setBusy(false); }
+    } catch (e) { setError(errorMessage(e)); setAutomationError("whatsapp"); }
+    finally { setBusy(false); }
   }
+  const automate = useEffectEvent(() => {
+    if (loading || !config || !session || selected || busy) return;
+    if (session.state === "identified" && !run && stockAttempt.current !== `${session.id}-${session.version}`) { void checkStock(); return; }
+    // Never turn a historical simulator result or an existing WA conversation into a new RFQ.
+    if (run && run.status !== "fulfilled_source" && run.transport !== "whatsapp" && run.vendors.every(vendor => vendor.outcome === "pending" && !vendor.quote && !vendor.initial_quote && vendor.counteroffers_used === 0) && !run.exchanges?.length && !comparison && whatsApp && whatsappAttempt.current !== run.id) void startWhatsApp();
+  });
+  useEffect(() => { automate(); }, [loading, config, session, run, selected, busy, comparison, whatsApp]);
   async function prepare() {
     if (!session || busy || live.refreshing) return;
     setBusy(true); setError("");
     try {
       const started = run || await api<Run>("/demo/sourcing-runs", { session_id: session.id, expected_version: session.version }, `source-${session.id}-${session.version}`);
       setRun(started);
-      const ready = started.transport === "whatsapp" || started.status === "fulfilled_source" ? started : await api<Run>(`/demo/sourcing-runs/${started.id}/advance`, {}); setRun(ready);
+      const ready = started;
       const result = await api<Comparison>(`/demo/sourcing-runs/${started.id}/prepare-comparison`, {}, `manual-comparison-${ready.id}-${crypto.randomUUID()}`); setComparison(result);
     } catch (e) { setError(errorMessage(e)); } finally { setBusy(false); }
   }
@@ -147,18 +163,18 @@ function DecisionContent({ sessionId }: { sessionId: string | null }) {
     {selectedVendor && <PurchaseOrderCard purchaseOrder={purchaseOrder} error={poError} busy={poBusy} onRetry={() => { if (run) void loadPurchaseOrder(run.id); }} />}
     {!sessionId && !loading && <section className={card}><p>Pilih work order dari daftar untuk membuka perbandingan.</p><Link href="/manager/" className={`${primary} mt-4`}>Pilih work order</Link></section>}
     {session && <section className={`${card} space-y-3`}><div className="flex flex-wrap justify-between gap-3"><div><p className="text-xs text-slate-500 break-all">WO {session.id}</p><h2 className="mt-2 text-xl font-bold">{session.description}</h2><p className="mt-2 text-sm text-slate-600">{session.quantity} buah • Gudang asal {warehouseName(session.warehouse_id, config)}</p></div><span className="text-sm font-semibold">{label(session.state)}</span></div>
-      {session.state !== "identified" ? <Link href={`/technician/clarification/?session=${session.id}`} className={primary}>Selesaikan identifikasi terlebih dahulu</Link> : !run && <div className="space-y-3"><p className="text-sm text-slate-600">Cek stok asal dan cari bearing yang sama di gudang lain. Setelah itu, pilih pencarian vendor melalui WhatsApp atau simulator.</p><button className={primary} disabled={busy || !config} onClick={checkStock}>{busy ? <><LoaderCircle size={17} className="mr-2 animate-spin" />Memeriksa stok…</> : "Cek stok & sumber gudang"}</button></div>}
+      {session.state !== "identified" ? <Link href={`/technician/clarification/?session=${session.id}`} className={primary}>Selesaikan identifikasi terlebih dahulu</Link> : !run && <div className="space-y-3"><p className="text-sm text-slate-600">Sistem memeriksa stok gudang asal dan gudang lain. Jika stok asal kurang, permintaan penawaran otomatis dikirim melalui WhatsApp ke vendor demo yang sudah menyetujui.</p>{automationError === "stock" ? <button className={primary} disabled={busy} onClick={() => void checkStock()}>Coba cek stok lagi</button> : <p role="status" className="flex items-center gap-2"><LoaderCircle size={17} className="animate-spin" />Memeriksa stok…</p>}</div>}
       {run?.status === "fulfilled_source" && <p className="rounded-xl bg-emerald-50 p-3 text-sm">Stok gudang asal mencukupi. Vendor tidak dihubungi. Ini belum berarti mesin selesai diperbaiki.</p>}
     </section>}
-    {run && !selected && (!comparison || run.transport === "whatsapp") && <section className={`${card} space-y-4`}><h2 className="text-lg font-bold text-[#0F274A]">{run.status === "fulfilled_source" ? "Bandingkan sumber yang tersedia" : run.transport === "whatsapp" ? "Pencarian vendor melalui WhatsApp nyata" : "Pilih cara mencari penawaran vendor"}</h2>
-      {run.status !== "fulfilled_source" && run.transport !== "whatsapp" && !comparison && <><p className="text-sm text-gray-600">Tindakan WhatsApp mengirim permintaan penawaran ke vendor yang dikonfigurasi. Balasan asli diperlukan untuk melengkapi harga, stok, ongkir, pajak, dan estimasi tiba.</p><div className="flex flex-wrap gap-3"><button className={primary} disabled={busy || !config || !readyForWhatsApp} onClick={startWhatsApp}>{busy ? "Memproses…" : "Hubungi vendor via WhatsApp"}</button><Link href="/whatsapp/" className={secondary}>Koneksi & QR WhatsApp</Link></div>{!readyForWhatsApp && <p className="text-sm text-amber-800">{whatsApp?.blocked_reason || "Buka halaman WhatsApp untuk memeriksa kesiapan koneksi dan vendor."}</p>}<div className="border-t border-gray-100 pt-4"><p className="mb-3 text-xs text-gray-500">Simulator opsional memakai jawaban sintetis dan tidak mengirim pesan WhatsApp.</p><button className={secondary} disabled={busy} onClick={prepare}>Jalankan simulator & bandingkan</button></div></>}
-      {(run.transport === "whatsapp" || run.status === "fulfilled_source") && <><p className="text-sm text-gray-600">{run.transport === "whatsapp" ? "Status, balasan, dan perbandingan diperbarui otomatis. Vendor yang belum menjawab tetap menunggu; stok dan harganya belum diketahui. Anda bisa membandingkan data yang tersedia. Penawaran belum lengkap atau masih dinegosiasikan tidak dapat dipilih." : "Stok gudang asal memenuhi kebutuhan. Siapkan perbandingan tanpa menghubungi vendor."}</p><button className={primary} disabled={busy || live.refreshing || !config || !!confirm} onClick={prepare}>{busy ? "Menyiapkan…" : waitingForVendors ? "Bandingkan data yang tersedia" : comparison ? "Perbarui perbandingan" : "Siapkan perbandingan"}</button></>}
-      {comparison && run.transport !== "whatsapp" && run.status !== "fulfilled_source" && <p className="text-sm text-gray-600">Perbandingan ini menggunakan penawaran simulator. Gunakan WO baru untuk mencoba vendor WhatsApp nyata.</p>}
+    {run && !selected && (!comparison || run.transport === "whatsapp") && <section className={`${card} space-y-4`}><h2 className="text-lg font-bold text-[#0F274A]">{run.status === "fulfilled_source" ? "Bandingkan sumber yang tersedia" : "Penawaran vendor melalui WhatsApp"}</h2>
+      {run.status !== "fulfilled_source" && run.transport !== "whatsapp" && !comparison && <><p className="text-sm text-gray-600">Stok gudang asal kurang. Sistem otomatis menghubungi vendor demo melalui WhatsApp. Balasan vendor digunakan untuk melengkapi stok, harga, ongkir, pajak, dan waktu tiba.</p>{automationError === "whatsapp" ? <button className={primary} disabled={busy} onClick={() => void startWhatsApp(true)}>Coba hubungkan penawaran lagi</button> : <p role="status" className="flex items-center gap-2 text-sm"><LoaderCircle size={17} className="animate-spin" />Menyiapkan permintaan penawaran…</p>}</>}
+      {run.transport === "whatsapp" && (automationError === "whatsapp" || incompleteWhatsAppStart) && <button className={secondary} disabled={busy} onClick={() => void startWhatsApp(true)}>Coba lengkapi pengiriman penawaran</button>}
+      {(run.transport === "whatsapp" || run.status === "fulfilled_source") && <><p className="text-sm text-gray-600">{run.transport === "whatsapp" ? "Balasan dan perbandingan diperbarui otomatis. Stok kosong dibedakan dari vendor yang belum menjawab. Setelah penawaran lengkap, sistem menawar maksimal satu kali per vendor bila target harga memungkinkan. Penawaran belum lengkap atau masih dinegosiasikan belum dapat dipilih." : "Stok gudang asal memenuhi kebutuhan. Siapkan perbandingan tanpa menghubungi vendor."}</p><button className={primary} disabled={busy || live.refreshing || !config || !!confirm} onClick={prepare}>{busy ? "Menyiapkan…" : waitingForVendors ? "Bandingkan data yang tersedia" : comparison ? "Perbarui perbandingan" : "Siapkan perbandingan"}</button></>}
     </section>}
     {comparison && <SourceComparison comparison={comparison} config={config} selected={selected} busy={busy || live.refreshing || comparisonStale} onChoose={openConfirmation} />}
     {run && <WarehouseStock run={run} config={config} />}
-    {run && run.vendors.length > 0 && <section className={`${card} overflow-x-auto`}><h2 className="text-lg font-bold">{run.transport === "whatsapp" ? "Penawaran WhatsApp nyata" : "Penawaran simulator"}</h2><p className="mb-4 mt-1 text-sm text-slate-600">{run.transport === "whatsapp" ? "Hanya penawaran dari balasan vendor yang ditampilkan. Maksimal satu penawaran harga per vendor." : "Data sintetis, maksimal satu penawaran harga per vendor. Tidak ada pesan WhatsApp nyata."}</p>{run.negotiation && <p className="mb-4 rounded-xl bg-[#F8E8B6]/60 p-3 text-sm text-[#0F274A]">Negosiasi putaran {run.negotiation.round}: total acuan {money(run.negotiation.best_total)} → target total {money(run.negotiation.target_total)} (10% lebih rendah). Target harga per buah memperhitungkan biaya selain barang dari masing-masing vendor.</p>}<table className="w-full min-w-[850px] text-left text-sm"><thead className="border-b border-gray-200 bg-[#EAECEF] text-xs uppercase text-gray-700"><tr>{["Vendor", "Hasil", "Stok", "Harga awal / buah", "Harga akhir / buah", "Negosiasi", "Tawaran harga"].map(h => <th key={h} className="px-3 py-3">{h}</th>)}</tr></thead><tbody>{run.vendors.map(v => <tr key={v.vendor_id} className="border-b border-slate-100"><td className="px-3 py-4 font-semibold">{v.vendor_id}</td><td className="px-3 py-4">{run.transport === "whatsapp" && v.outcome === "pending" ? "Menunggu penawaran lengkap" : label(v.outcome)}</td><td className="px-3 py-4">{stockQuantity(v.quote?.qty_available)}</td><td className="px-3 py-4">{money(v.initial_quote?.unit_price)}</td><td className="px-3 py-4">{money(v.quote?.unit_price)}</td><td className="px-3 py-4"><p>{negotiationStatus(run, v)}</p>{run.negotiation?.vendors.find(plan => plan.vendor_id === v.vendor_id)?.target_unit_price && <p className="mt-1 text-xs text-gray-500">Target {money(run.negotiation.vendors.find(plan => plan.vendor_id === v.vendor_id)?.target_unit_price)} / buah</p>}</td><td className="px-3 py-4">{v.counteroffers_used} / 1</td></tr>)}</tbody></table></section>}
-    {run?.transport === "whatsapp" && <section className={`${card} space-y-4`}><div className="flex flex-wrap items-center justify-between gap-3"><h2 className="text-lg font-bold">Percakapan vendor</h2><Link href="/whatsapp/" className="text-sm font-semibold text-[#17375E] hover:underline">Buka WhatsApp →</Link></div>{conversations.length ? <WhatsAppConversationsView conversations={conversations} recipients={whatsApp?.recipients} /> : <p className="text-sm text-gray-500">Memuat percakapan untuk pencarian ini…</p>}</section>}
+    {run && run.vendors.length > 0 && <section className={`${card} overflow-x-auto`}><h2 className="text-lg font-bold">{run.transport === "whatsapp" ? "Penawaran WhatsApp nyata" : "Penawaran simulator"}</h2><p className="mb-4 mt-1 text-sm text-slate-600">{run.transport === "whatsapp" ? "Hanya penawaran dari balasan vendor yang ditampilkan. Maksimal satu penawaran harga per vendor." : "Data sintetis, maksimal satu penawaran harga per vendor. Tidak ada pesan WhatsApp nyata."}</p>{run.negotiation && <p className="mb-4 rounded-xl bg-[#F8E8B6]/60 p-3 text-sm text-[#0F274A]">Negosiasi putaran {run.negotiation.round}: total acuan {money(run.negotiation.best_total)} → target total {money(run.negotiation.target_total)} (10% lebih rendah). Target harga per buah memperhitungkan biaya selain barang dari masing-masing vendor.</p>}<table className="w-full min-w-[850px] text-left text-sm"><thead className="border-b border-gray-200 bg-[#EAECEF] text-xs uppercase text-gray-700"><tr>{["Vendor", "Hasil", "Stok", "Harga awal / buah", "Harga akhir / buah", "Negosiasi", "Tawaran harga"].map(h => <th key={h} className="px-3 py-3">{h}</th>)}</tr></thead><tbody>{run.vendors.map(v => <tr key={v.vendor_id} className="border-b border-slate-100"><td className="px-3 py-4 font-semibold">{v.vendor_id}</td><td className="px-3 py-4">{run.transport === "whatsapp" && v.outcome === "pending" ? "Menunggu penawaran lengkap" : label(v.outcome)}</td><td className="px-3 py-4">{v.outcome === "no_stock" ? "0" : stockQuantity(v.quote?.qty_available)}</td><td className="px-3 py-4">{money(v.initial_quote?.unit_price)}</td><td className="px-3 py-4">{money(v.quote?.unit_price)}</td><td className="px-3 py-4"><p>{negotiationStatus(run, v)}</p>{run.negotiation?.vendors.find(plan => plan.vendor_id === v.vendor_id)?.target_unit_price && <p className="mt-1 text-xs text-gray-500">Target {money(run.negotiation.vendors.find(plan => plan.vendor_id === v.vendor_id)?.target_unit_price)} / buah</p>}</td><td className="px-3 py-4">{v.counteroffers_used} / 1</td></tr>)}</tbody></table></section>}
+    {run?.transport === "whatsapp" && <section className={`${card} space-y-4`}><div className="flex flex-wrap items-center justify-between gap-3"><h2 className="text-lg font-bold">Percakapan vendor</h2></div>{conversations.length ? <WhatsAppConversationsView conversations={conversations} recipients={whatsApp?.recipients} /> : <p className="text-sm text-gray-500">Memuat percakapan untuk pencarian ini…</p>}</section>}
     {confirm && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-5"><section role="dialog" aria-modal="true" aria-labelledby="decision-heading" className="w-full max-w-md space-y-4 rounded-3xl border border-gray-100 bg-white p-6 shadow-2xl sm:p-8"><h2 id="decision-heading" className="text-xl font-bold text-[#0F274A]">{confirm.source_kind === "vendor" ? "Setujui Purchase Order demo?" : "Pilih sumber gudang?"}</h2><p className="text-sm">Pilih {sourceName(confirm, config)} untuk seluruh {session?.quantity} buah. Sistem akan memeriksa kembali stok atau validitas penawaran.</p><p className="text-sm text-gray-600">{confirm.source_kind === "vendor" ? "Persetujuan ini membuat PO demo PT PartPilot dari harga dan jumlah yang disetujui. Dokumen tidak dikirim otomatis melalui email atau WhatsApp." : "Permintaan mutasi dicatat untuk demo. Tidak ada pemberitahuan nyata kepada staf, perpindahan stok, atau PO."}</p><ErrorNotice message={error} />{confirmationStale && <p className="rounded-xl bg-amber-50 p-3 text-sm text-amber-900">Data telah berubah atau keputusan sudah tercatat. Tinjau kembali sebelum melanjutkan.</p>}<div className="flex justify-end gap-3"><button className={secondary} disabled={busy} onClick={closeConfirmation}>{confirmationStale ? "Tutup & perbarui" : "Batal"}</button><button className={primary} disabled={busy || confirmationStale} onClick={choose}>{busy ? "Menyimpan…" : confirm.source_kind === "vendor" ? "Konfirmasi PO demo" : "Konfirmasi pilihan gudang"}</button></div></section></div>}
     {warehouseConfirmation && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-5"><section role="dialog" aria-modal="true" aria-labelledby="warehouse-confirmation" className="w-full max-w-md space-y-4 rounded-3xl border border-gray-100 bg-white p-6 text-center shadow-2xl sm:p-8"><CheckCircle2 className="mx-auto h-12 w-12 rounded-2xl bg-emerald-100 p-3 text-emerald-700" /><h2 id="warehouse-confirmation" className="text-xl font-bold text-[#0F274A]">Request mutasi berhasil dicatat</h2><p className="text-sm">{warehouseConfirmation} dipilih untuk {session?.quantity} buah. Permintaan ini dicatat sebagai demo. Tidak ada pemberitahuan nyata kepada staf, perpindahan stok, atau PO.</p><button autoFocus className={primary} onClick={() => setWarehouseConfirmation("")}>Selesai</button></section></div>}
   </DemoShell>;

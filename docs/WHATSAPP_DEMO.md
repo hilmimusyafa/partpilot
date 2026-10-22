@@ -12,8 +12,8 @@ Private files: `whatsapp.env` (bridge bearer token and allowlist), `demo-chat-wo
 
 1. Link an account on the authenticated WhatsApp page. Keep participant opt-in, destination and active invitation window configured on the server.
 2. Create a WO from a physical description, e.g. NTN bearing 10x30x9 mm with contact rubber seals on both sides, quantity 6, origin WH01, for the warehouse-plus-vendor scenario. Start with only outer diameter 30 mm to demonstrate clarification; answer NTN, 10x30x9 mm, and contact rubber seals on both sides.
-3. Check stock; choose real WhatsApp rather than the simulator for this run. A single source must fulfill the quantity.
-4. The initial RFQ includes the item, quantity, dummy destination, explicit demo disclaimer and a copyable blank form. Ask participants to use WhatsApp Reply.
+3. After technician clarification identifies the item, open the manager page. Stock checking and WhatsApp start automatically if origin stock is insufficient. A single source must fulfill the quantity.
+4. The initial RFQ includes the item, quantity, dummy destination, explicit demo disclaimer and a copyable blank form. Ordinary replies after delivery attach to the single active RFQ; explicit Reply must reference that active conversation.
 5. Missing or ambiguous information triggers a form containing only missing fields. Unknown is not zero. Nominal total shipping and tax are required; tax percentages alone remain unknown.
 6. Once complete, each eligible vendor can receive one feasible price proposal from the same frozen negotiation round. The benchmark is the lowest complete eligible total expenditure across warehouse and vendor options; target total is 90% of that benchmark. Target unit price is floor((target total minus that vendor’s non-item costs) / quantity). Infeasible or non-lower targets are skipped. Neither the benchmark nor competitor/internal costs are disclosed to vendors. Pending negotiation remains ineligible for final selection until a usable answer/refusal arrives. The manager chooses; a vendor choice generates a demo PO PDF, but no procurement or PO dispatch is executed.
 
@@ -34,7 +34,7 @@ Use full brand and model. Arrival is distinct from preparation/dispatch. A vendo
 
 Database constraints allow one counteroffer per vendor/run, at most three follow-up messages, and two extraction attempts per inbound message. Retries/restarts do not reset these budgets. Delivery uncertainty never triggers an automatic duplicate send. The bridge and DB maintain separate idempotency records. No response remains distinct from no stock.
 
-Reset closes active conversations, cancels queued sends and preserves the external-message ledger and audit. It cannot retract messages already delivered. After reset, an unreferenced late reply stays unmatched rather than attaching to a new RFQ. Do not reset a live test while awaiting participant replies unless intentionally cancelling it.
+Reset closes active conversations, cancels queued sends and preserves the external-message ledger and audit. It cannot retract messages already delivered. After reset, older timestamps and explicit old references remain unmatched. Ordinary chat after a new RFQ delivery belongs to the single active RFQ. Do not reset a live test while awaiting participant replies unless intentionally cancelling it.
 
 ## Verification boundaries
 
@@ -44,4 +44,4 @@ Verification on 2026-10-22: the integrated backend suite passed 124 tests (one l
 
 Current release verification: 145 isolated backend tests passed, with the explicit live-gateway test excluded. The deployed browser scenario separately exercises actual gateway clarification, warehouse alias lookup, simulator negotiation, manager choices and PDF generation. This does not prove the new price proposal and complete quote loop over real WhatsApp; participant-dependent testing is deferred.
 
-Dashboard refresh update: active manager comparisons now refresh on sourcing revisions, including incomplete/review replies and extraction exhaustion. A closed conversation following reset is history, not an active quote source. Create a fresh identified WO and explicitly start a new RFQ when participants are ready. Do not reopen old conversations or attach late replies to a different WO. UI refresh is tested with evolving synthetic responses; PostgreSQL extraction/revision/approval behavior is tested in owned isolated databases.
+Dashboard refresh update: active manager comparisons now refresh on sourcing revisions, including incomplete/review replies and extraction exhaustion. A closed conversation following reset is history, not an active quote source. Open the identified WO in the manager page when participants are ready; WhatsApp starts automatically if origin stock is insufficient. Do not reopen old conversations or attach late replies to a different WO. UI refresh is tested with evolving synthetic responses; PostgreSQL extraction/revision/approval behavior is tested in owned isolated databases.

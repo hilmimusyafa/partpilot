@@ -31,6 +31,7 @@ def messages(cid):return query('SELECT id,direction,body AS text,status,kind,cre
 def conversations(run_id=None):
     rows=query('SELECT c.*,r.label FROM pp.wa_conversation c JOIN pp.wa_recipient r ON r.id=c.vendor_id '+('WHERE c.run_id=%s ' if run_id else '')+'ORDER BY c.created_at DESC LIMIT 50',(run_id,) if run_id else ())
     for c in rows:
+        c['unmatched_messages']=query("SELECT id,direction,body AS text,status,created_at,payload->>'routing_reason' routing_reason FROM pp.wa_message WHERE vendor_id=%s AND conversation_id IS NULL AND status='unmatched' AND received_at>=%s ORDER BY created_at,id",(c['vendor_id'],c['created_at'])) if c['status']!='closed' else []
         c['messages']=messages(c['id']);c['missing_fields']=[k for k in FIELDS if k not in c['fields']]
         c['counteroffers_used']=sum(m['kind']=='price_counteroffer' for m in c['messages'])
         c['followups_used']=sum(m['kind']=='followup' for m in c['messages'])
@@ -43,7 +44,7 @@ def rfq(c):
       "Ini pengujian yang sudah disepakati, bukan pesanan pembelian.\n\n"
       "Kalau stok tersedia, mohon salin dan isi form berikut ya Kak:\n\n"+quote_form(FIELDS)+"\n\n"
       "Kalau stok kosong, cukup balas 'stok kosong'. Jika ada yang belum diketahui, tulis 'belum tahu'. Ongkir dan pajak diisi total untuk kebutuhan di atas; tulis 0 jika tidak dikenakan. Terima kasih 🙏\n\n"
-      f"Referensi demo: PP-{c['id'][:8]}. Mohon balas memakai fitur Reply pada pesan ini agar tidak tertukar dengan pengujian sebelumnya.")
+      f"Referensi demo: PP-{c['id'][:8]}. Silakan balas langsung di chat ini. Jika membalas pengujian lama, gunakan fitur Reply pada pesan yang dimaksud.")
 
 def quote_form(fields):
     return '\n'.join(f'{LABELS[k]} : ' for k in fields)
@@ -57,8 +58,15 @@ def start(run_id):
     for r in recipients:
         if not bridge('/check',{'phone':r['phone']}).get('registered'):
             raise procurement.ProcurementError('whatsapp_number_unregistered',f"{r['id']} tidak terdaftar di WhatsApp; periksa nomor demo",422)
-    for r in recipients:
-        c=call('wa_start',run_id,r['id']);call('wa_enqueue',c['id'],'rfq',rfq(c),{})
+    # Reserve the entire recipient batch atomically, using only validated DB functions.
+    # The chat worker cannot see or send a partially started batch.
+    from backend.wo.repository import get_db_connection
+    from psycopg.types.json import Jsonb
+    with get_db_connection() as conn:
+        for r in recipients:
+            c=conn.execute('SELECT pp.wa_start(%s,%s)',(run_id,r['id'])).fetchone()[0]
+            existing=conn.execute("SELECT id FROM pp.wa_message WHERE conversation_id=%s AND kind='rfq'",(c['id'],)).fetchone()
+            if not existing:conn.execute('SELECT pp.wa_enqueue(%s,%s,%s,%s)',(c['id'],'rfq',rfq(c),Jsonb({})))
     return conversations(run_id)
 
 def quote(c,fields):
@@ -78,6 +86,7 @@ def vendor_views(run,at):
         first=next((e for e in events if e['vendor_id']==c['vendor_id'] and e['kind']=='rfq'),{})
         counter=next((e for e in events if e['vendor_id']==c['vendor_id'] and e['kind']=='price_counteroffer'),{})
         q=(counter.get('response') or {}).get('quote') or (first.get('response') or {}).get('quote')
+        if c['status']=='no_stock':q=None
         from backend.procurement.service import quote_reasons
         reasons=quote_reasons(q,run['snapshot'],at)
         if c['status'] not in ('quoted','negotiation_refused','insufficient_stock'):reasons.append(c['status'])

@@ -19,7 +19,9 @@ def process_conversation(c):
     for m in pending[:8]:
         if not call('wa_parse_attempt',m['id']):return
         result=extract(m['body'],m['received_at'] or m['created_at'])
-        fields.update(result['fields']);changed.update(result['fields']);outcome=result['outcome'] or outcome;ids.append(m['id'])
+        invalid=[key for key in result.get('invalid_fields',[]) if key in FIELDS]
+        for key in invalid:fields.pop(key,None)
+        fields.update(result['fields']);changed.update(result['fields']);changed.update(invalid);outcome=result['outcome'] or outcome;ids.append(m['id'])
     counter=query("SELECT * FROM pp.wa_message WHERE conversation_id=%s AND kind='price_counteroffer' AND status='sent'",(c['id'],))
     applicable_counter=bool(counter and any((m['received_at'] or m['created_at'])>=counter[0]['delivered_at']-timedelta(seconds=5) for m in pending[:8]))
     # A non-answer cannot publish a stale quote as a negotiated revision.

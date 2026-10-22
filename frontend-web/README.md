@@ -51,6 +51,14 @@ For WhatsApp runs, `use-live-comparison.ts` polls run state and conversations in
 
 An open approval modal pins the reviewed comparison. A new run version disables that approval until the manager closes it and reviews fresh data. Approval also rechecks the run immediately before writing; backend conflicts require another review. Automatic fetches cannot replace an open confirmation or a recorded selection, and a decision committed in another tab is reflected by polling. Closed WhatsApp conversations are clearly marked as historical, not current offers.
 
-Successful WO submission shows a confirmation with links to the manager desk or the clarification flow. Saving only a draft has its own wording. A failed submission never shows successful submission; a saved draft remains reachable for recovery. Warehouse selection shows “Request mutasi berhasil dicatat” and explicitly records only a demo request, without real staff notification, stock movement or a PO.
+Successful WO submission continues directly to technician clarification; only an identified WO exposes the manager comparison action. Saving only a draft has its own wording. A failed submission never shows successful submission; a saved draft remains reachable for recovery. Warehouse selection shows “Request mutasi berhasil dicatat” and explicitly records only a demo request, without real staff notification, stock movement or a PO.
 
 The existing browser smoke command now also runs `tests/live-workflow.cjs`. Its evolving intercepted API reproduces stale live comparisons, a 409 refresh conflict, a conversation-read failure, subsequent pending negotiation, a change while the approval modal is open, a preflight race, another tab's decision, manager polling after a 503, and queued → clarification → identified transitions. Browser time is advanced locally; no live WhatsApp/database reset is involved.
+
+## Automatic WhatsApp flow (2026-10-22)
+
+Opening an identified WO at the manager desk automatically creates/reuses its sourcing run and starts WhatsApp RFQs if the origin stock is insufficient. There is no transport selector or simulator action. The WhatsApp connection route remains available for operators but is removed from primary navigation. A disconnected bridge or failed start displays an explicit retry; polling never repeatedly retries sending. Existing WhatsApp runs and historical simulator results are reused without new RFQs. The backend remains responsible for durable per-run/vendor idempotency.
+
+Clarification stays in the technician flow after submission. Existing manager-list links route unfinished WOs back to the technician. Unmatched inbound messages appear separately as unlinked evidence, never as an eligible quote; no-stock/no-response/closed conversations do not request missing price fields.
+
+The browser suite includes `tests/auto-whatsapp.cjs` for automatic source/WA initiation, disconnected/error recovery, no sending retry flood, reload reuse, and removed navigation/selection controls. All requests are intercepted locally; it sends no real WhatsApp messages.

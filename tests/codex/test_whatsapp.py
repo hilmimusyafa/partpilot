@@ -120,7 +120,7 @@ def test_db_consent_counteroffer_reset_and_inbound_dedup(wa):
     assert len(wa.sql('SELECT * FROM pp.wa_message'))==2
     assert wa.sql("SELECT status FROM pp.wa_message WHERE direction='out'")[0]['status']=='sent'
 
-def test_late_quoted_and_unquoted_replies_do_not_attach_after_reset(wa):
+def test_old_explicit_replies_are_rejected_but_current_plain_reply_attaches(wa):
     from test_procurement import start
     from backend.whatsapp.repository import call
     def sent_run():
@@ -130,10 +130,13 @@ def test_late_quoted_and_unquoted_replies_do_not_attach_after_reset(wa):
     first,old=sent_run()
     wa.sql("SELECT pp.demo_reset(1,'reset-correlation','RESET DEMO')")
     current,new=sent_run()
-    for mid,quoted in [('oldquoted','sent-'+old['id']),('unquoted',None)]:
+    for mid,quoted in [('oldquoted','sent-'+old['id'])]:
         saved=call('wa_inbound',mid,'628123456789','harga 150rb per pcs',datetime.now(timezone.utc),quoted)
         row=wa.sql('SELECT * FROM pp.wa_message WHERE id=%s',(saved,))[0]
         assert row['status']=='unmatched' and row['conversation_id'] is None
+    # The demo now accepts ordinary chat after the current RFQ was delivered.
+    plain=call('wa_inbound','unquoted','628123456789','stok kosong',datetime.now(timezone.utc))
+    assert wa.sql('SELECT conversation_id FROM pp.wa_message WHERE id=%s',(plain,))[0]['conversation_id']==current['id']
     saved=call('wa_inbound','newquoted','628123456789','harga 150rb per pcs',datetime.now(timezone.utc),'sent-'+new['id'])
     assert wa.sql('SELECT conversation_id FROM pp.wa_message WHERE id=%s',(saved,))[0]['conversation_id']==current['id']
 
