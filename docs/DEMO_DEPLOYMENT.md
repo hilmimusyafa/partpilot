@@ -7,7 +7,7 @@ The frontend from main and the backend bearing branch are integrated. The served
 ## Demo boundaries
 
 - Shared demo login, username `demo`; password stays in the host's scoped runtime file. Role selection on the landing page is navigation, not production RBAC.
-- Vendor WhatsApp is a simulator; no vendor is contacted. A manager records a source selection only. No purchase, transfer, reservation or completed repair is executed.
+- Vendor sourcing offers two separate modes per run: deterministic simulator, or real WhatsApp Web via a private Baileys bridge to opted-in demo recipients. Real delivery is an external side effect; do not describe it as simulated messaging. A manager records a source selection only. No purchase, transfer, reservation or completed repair is executed.
 - Five warehouses exist. WH01 and WH02 have documented naming rules. WH03–WH05 remain explicitly unknown, not confirmed empty.
 - Reset clears active WO/procurement state and restores seeded stock. Previous workflow rows are archived in immutable `pp.demo_reset_audit`; audit storage grows with resets. Reset affects all people sharing this demo.
 - Database checks require an explicitly enabled synthetic dataset marker, matching database identity and no foreign company. Reset uses an explicit table list without CASCADE and rejects a live worker job. A shared PostgreSQL advisory lock protects API reads/writes against concurrent reset. Each mutating request carries the generation of the config it loaded; a stale tab must refresh.
@@ -19,10 +19,10 @@ All four presets are available on `/technician/`. Machine context is the simulat
 
 | Preset | Description | Qty | Origin | Expected result |
 |---|---|---:|---|---|
-| Stok sendiri | Bearing NTN 6200LLU untuk conveyor | 1 | SYN-WH-01 | Origin available 4; no RFQs |
-| Nama berbeda di gudang 2 | Bearing NTN 6200LLU untuk conveyor | 6 | SYN-WH-01 | Origin insufficient; WH02 G2-BRG-017 has 8; its local name maps to the same NTN 6200LLU |
-| Perbandingan vendor | Bearing NTN 6200LLU untuk conveyor | 12 | SYN-WH-01 | Neither warehouse fulfills the whole quantity; compare complete vendor offers |
-| Identitas belum lengkap | Bearing conveyor bunyi, perlu diganti | 1 | SYN-WH-01 | Clarification; answer brand NTN, base 6200, suffix LLU when requested |
+| Stok sendiri | Bearing NTN ukuran 10x30x9 mm, karet rapat dua sisi. Kode tidak terbaca. | 1 | SYN-WH-01 | Origin available 4; no RFQs |
+| Nama berbeda di gudang 2 | Bearing NTN ukuran 10x30x9 mm, karet rapat dua sisi. Kode tidak terbaca. | 6 | SYN-WH-01 | Origin insufficient; WH02 G2-BRG-017 has 8; its local name maps to the same NTN 6200LLU |
+| Perbandingan vendor | Bearing NTN ukuran 10x30x9 mm, karet rapat dua sisi. Kode tidak terbaca. | 12 | SYN-WH-01 | Neither warehouse fulfills the whole quantity; compare complete vendor offers |
+| Identitas belum lengkap | Bearing conveyor bunyi, perlu diganti | 1 | SYN-WH-01 | Clarification; answer brand NTN, dimensions 10x30x9 mm, closure karet rapat dua sisi when requested |
 
 WH01 has physical quantity 10 and reserved quantity 6, leaving 4. WH02 has physical quantity 8 with no reservation. The reservation is an explicit synthetic assumption representing other maintenance demand. Base seed fixtures remain unchanged; deployment provisioning adds the reservation.
 
@@ -32,11 +32,15 @@ Vendor outcomes: SIM-ENOUGH (100 available), SIM-SHORT (2 available), SIM-REFUSE
 
 Costs are illustrative, not market quotations. Normal 100 units/hour, disrupted 40, contribution IDR500,000/unit (selling price 3,500,000 less avoidable variable cost 3,000,000), recoverable output 25%, continuous 24-hour horizon. Arrival is followed by 1 hour installation and 1 hour restart; extra recovery labor IDR250,000. Donor stock beyond reservations is assumed not to cause additional production loss. Quote tax is explicitly zero for this fixture, not a statement about tax law. Future cost totals vary slightly with actual comparison time and quote ETA.
 
+## Real WhatsApp demo
+
+See [WHATSAPP_DEMO.md](WHATSAPP_DEMO.md) for private linking, quote forms, durable limits and evidence boundaries.
+
 ## Reset and recovery
 
-Use **Reset demo**, enter `RESET DEMO`, then **Reset database demo**. Wait for identification to finish if the application says it is busy. It returns to an empty manager list with the same seed stock; a second reset is supported. An old tab is rejected rather than silently submitting into the new demo generation.
+Use **Reset demo**, enter `RESET DEMO`, then **Reset database demo**. Wait for identification to finish if the application says it is busy. It returns to an empty manager list with the same seed stock; a second reset is supported. An old tab is rejected rather than silently submitting into the new demo generation. Reset closes active vendor conversations and cancels queued unsent messages; it preserves WhatsApp messages/audit and cannot unsend messages on recipients' phones. After a reset, replies must reference the current RFQ using WhatsApp Reply or its PP reference so old replies cannot contaminate a new run.
 
-Model calls are real through the existing gateway. The deployed worker allows 60 seconds per call, two durable attempts per job and a 90-second lease. Default library timeout remains 20 seconds outside this deployment. During verification, a valid extraction took about 42 seconds, motivating the bounded deployment override. If a gateway outage persists, the WO remains failed and the UI offers the backend's bounded explicit retry; it never reports invented success. Allow up to roughly 2 minutes for a retrying identification.
+Complete, unambiguous bearing descriptions can use the enabled rule-first matcher, explicitly audited as deterministic with gateway_called=false. Other cases use real model calls through the existing gateway. The deployed alias is ag/gemini-3.8-flash-low; availability must be rechecked if changing gateways. The deployed worker allows 60 seconds per call, two durable attempts per job and a 90-second lease. Default library timeout remains 20 seconds outside this deployment. The earlier high-effort alias sometimes exceeded the timeout; the selected low-effort alias passed a synthetic full vendor quote extraction in about 5 seconds. This is a measured sample, not a latency guarantee. If a gateway outage persists, the WO remains failed and the UI offers the backend's bounded explicit retry; it never reports invented success. Allow up to roughly 2 minutes for a retrying identification.
 
 ## Running and maintaining this deployment
 
@@ -55,7 +59,7 @@ Runtime files are outside Git under `/home/rifqisetiawan/.config/partpilot/`, mo
 
 For a new empty deployment, run `scripts/provision_demo_credentials.py` to provision scoped secrets, start the database, run `scripts/install_demo.py` with the host Python environment, then build/start API and worker. The installer refuses a different database name or an existing initialized dataset. It is not a migration script for a shared ERP.
 
-Build after source changes with `npm ci --ignore-scripts`, `npm run build --workspace=frontend-web`, then `docker compose -f deploy/compose.yaml build api` and `docker compose -f deploy/compose.yaml up -d api worker`. Run checks and use a new release/image tag before upgrading an in-use demo. HTTPS is configured in the existing Caddy gateway, not a second web gateway.
+Build after source changes with `npm ci --ignore-scripts`, `npm run build --workspace=frontend-web`, then `docker compose -f deploy/compose.yaml build api` and `docker compose -f deploy/compose.yaml up -d api worker chat-worker`. Run checks and use a new release/image tag before upgrading an in-use demo. HTTPS is configured in the existing Caddy gateway, not a second web gateway.
 
 ## Curl
 
@@ -70,7 +74,7 @@ curl -fsS -u demo https://partpilot.rifqisetiawan.my.id/api/v1/work-orders \
   -H 'Content-Type: application/json' \
   -H 'X-PartPilot-Request: demo' -H 'X-PartPilot-Generation: GENERATION' \
   -H 'Idempotency-Key: manual-bearing-6-001' \
-  -d '{"company_id":"SYN-COMPANY-01","site_id":"DEMO-SITE","production_line_id":"DEMO-LINE","station_id":"DEMO-STATION","machine_id":"DEMO-CONVEYOR","warehouse_id":"SYN-WH-01","description":"Bearing NTN 6200LLU untuk conveyor","quantity":"6","urgency":"High"}'
+  -d '{"company_id":"SYN-COMPANY-01","site_id":"DEMO-SITE","production_line_id":"DEMO-LINE","station_id":"DEMO-STATION","machine_id":"DEMO-CONVEYOR","warehouse_id":"SYN-WH-01","description":"Bearing NTN ukuran 10x30x9 mm, karet rapat dua sisi. Kode tidak terbaca.","quantity":"6","urgency":"High"}'
 
 curl -fsS -u demo https://partpilot.rifqisetiawan.my.id/api/v1/work-orders/SESSION_ID/submit \
   -H 'Content-Type: application/json' \
@@ -90,4 +94,4 @@ Reuse the same key for retry of the same body. Use a different key for a new ope
 
 Run `.venv/bin/python scripts/run_isolated_checks.py` on Linux with PostgreSQL16 binaries. This creates owned temporary clusters, never connects to the live demo or ERP, and excludes the explicitly marked live-gateway test by default. Separately exercise browser/API with the deployed worker, shared login, real gateway and synthetic fixtures. Historical acceptance suites with different retry contracts are not represented as passing by this selected suite. This deployment is an authenticated shared demo, not multi-tenant production.
 
-Verified 2026-10-22: 42 isolated backend regressions passed, one explicit live test deselected; real gateway flows separately passed for own stock, WH02 alias, vendor comparison (after bounded retry), and clarification. Browser reset twice, stale tab rejection, mobile layout, manager choice persistence and restart checks passed. HTTPS health200, unauthenticated401, authenticatedUI/config200. No JavaScript page errors.
+Earlier simulator release verification (before the WhatsApp/description changes): 42 isolated backend regressions passed, one explicit live test deselected; real gateway flows separately passed for own stock, WH02 alias, vendor comparison (after bounded retry), and clarification. Browser reset twice, stale tab rejection, mobile layout, manager choice persistence and restart checks passed. HTTPS health200, unauthenticated401, authenticatedUI/config200. No JavaScript page errors.

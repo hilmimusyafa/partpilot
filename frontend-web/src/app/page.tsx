@@ -53,7 +53,7 @@ export default function LandingPage() {
 
           {/* Subtitle */}
           <p className="mt-1.5 text-xs sm:text-sm text-gray-500 font-normal">
-            Pilih tampilan demo untuk memulai
+            Pilih peran untuk membuka PartPilot
           </p>
 
           {/* Native HTML <details> Dropdown: Works 100% natively in every browser */}
@@ -66,7 +66,7 @@ export default function LandingPage() {
               <summary
                 className="w-48 h-10 px-5 flex items-center justify-center gap-2 bg-gradient-to-r from-[#17375E] via-[#245480] to-[#519BBF] text-white text-xs sm:text-sm font-semibold shadow-md hover:shadow-lg transition-all active:scale-95 cursor-pointer rounded-full group-open:rounded-b-none group-open:rounded-t-2xl list-none [&::-webkit-details-marker]:hidden select-none outline-hidden"
               >
-                <span>Buka demo</span>
+                <span>Pilih peran</span>
                 <ChevronDown className="w-3.5 h-3.5 transition-transform duration-200 stroke-[2.5] group-open:rotate-180" />
               </summary>
 

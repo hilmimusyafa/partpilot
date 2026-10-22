@@ -9,7 +9,7 @@ from typing import Any, Dict, List, Optional
 import httpx
 
 GATEWAY_BASE_URL = os.environ.get("HERMES_9ROUTER_BASE_URL", "http://127.0.0.1:20128/v1")
-DEFAULT_MODEL = "ag/gemini-3.8-flash-high"
+DEFAULT_MODEL = os.environ.get('PARTPILOT_MODEL', 'ag/gemini-3.8-flash-high')
 DEFAULT_TIMEOUT_SECONDS = 20.0
 MAX_OUTPUT_TOKENS = 4096
 

@@ -52,6 +52,10 @@ def quote_reasons(quote,snapshot,at):
     return reasons
 
 def vendor_views(row,events,at):
+    from backend.whatsapp.repository import available
+    if available() and repo.query('SELECT 1 FROM pp.wa_conversation WHERE run_id=%s',(row['id'],)):
+        from backend.whatsapp.service import vendor_views as real_vendor_views
+        return real_vendor_views(row,at)
     result=[]
     if row['snapshot']['status']=='fulfilled_source':return result
     for vendor in VENDORS:
@@ -70,7 +74,8 @@ def vendor_views(row,events,at):
 def get_run(rid, initial=False):
     row=repo.run_row(rid);events=[] if initial else repo.exchanges(rid);at=row["created_at"] if initial else now()
     vendors=vendor_views(row,events,at)
-    return {'api_version':'procurement-demo-v1','id':rid,'version':1 if initial else row['version'],**row['snapshot'],
+    transport='whatsapp' if any(v['vendor_id'].startswith('WA-') for v in vendors) else 'simulator'
+    return {'api_version':'procurement-demo-v1','id':rid,'version':1 if initial else row['version'],**row['snapshot'],'transport':transport,
             'vendors':vendors,'exchanges':events,'as_of':at.isoformat(),'procurement_executed':False,
             'repair_completed':False,'decision':None if initial else next(iter(repo.query('SELECT * FROM pp.demo_decision WHERE run_id=%s',(rid,))),None)}
 
@@ -82,6 +87,9 @@ def deliver(event,transport):
     repo.call('demo_receive',event['id'],reply.model_dump(mode='json'))
 
 def advance(rid,transport=None):
+    from backend.whatsapp.repository import available
+    if available() and repo.query('SELECT 1 FROM pp.wa_conversation WHERE run_id=%s',(rid,)):
+        return get_run(rid)
     transport=transport or DemoSimulator()
     row=repo.run_row(rid);s=row['snapshot']
     if s['status']=='fulfilled_source' or repo.query('SELECT id FROM pp.demo_decision WHERE run_id=%s',(rid,)):

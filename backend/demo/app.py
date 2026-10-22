@@ -12,6 +12,8 @@ from backend.wo.repository import get_db_connection,get_test_db_url
 from .console import router
 
 app.include_router(router)
+from backend.whatsapp.router import router as whatsapp_router
+app.include_router(whatsapp_router)
 
 @app.middleware('http')
 async def demo_boundary(request:Request,call_next):

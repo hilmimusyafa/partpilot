@@ -36,6 +36,7 @@ services:
       db: {condition: service_healthy}
     volumes:
       - /home/rifqisetiawan/.config/partpilot/demo-runtime.env:/run/partpilot/runtime.env:ro
+      - /home/rifqisetiawan/.config/partpilot/whatsapp.env:/run/partpilot/whatsapp.env:ro
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:18080/api/v1/health',timeout=3)"]
       interval: 15s
@@ -46,6 +47,8 @@ services:
     image: partpilot-demo:20261022
     environment:
       PARTPILOT_GATEWAY_TIMEOUT_SECONDS: "60"
+      PARTPILOT_BEARING_RULE_FIRST: "true"
+      PARTPILOT_MODEL: "ag/gemini-3.8-flash-low"
     command: ["python", "scripts/demo_runtime.py", "worker"]
     network_mode: host
     restart: unless-stopped
@@ -59,8 +62,42 @@ services:
       - /home/rifqisetiawan/.config/partpilot/demo-worker.env:/run/partpilot/runtime.env:ro
       - /home/rifqisetiawan/.config/partpilot/gateway-codex.env:/run/partpilot/gateway.env:ro
     logging: *logging
+  whatsapp:
+    image: partpilot-whatsapp:20261022
+    build:
+      context: ../services/whatsapp
+    env_file: /home/rifqisetiawan/.config/partpilot/whatsapp.env
+    network_mode: host
+    restart: unless-stopped
+    read_only: true
+    tmpfs: [/tmp]
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    volumes: [wa-state:/state]
+    logging: *logging
+  chat-worker:
+    image: partpilot-demo:20261022
+    environment:
+      PARTPILOT_GATEWAY_TIMEOUT_SECONDS: "60"
+      PARTPILOT_MODEL: "ag/gemini-3.8-flash-low"
+    command: ["python", "scripts/demo_runtime.py", "whatsapp"]
+    network_mode: host
+    restart: unless-stopped
+    read_only: true
+    tmpfs: [/tmp]
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    depends_on:
+      db: {condition: service_healthy}
+      whatsapp: {condition: service_started}
+    volumes:
+      - /home/rifqisetiawan/.config/partpilot/demo-chat-worker.env:/run/partpilot/runtime.env:ro
+      - /home/rifqisetiawan/.config/partpilot/whatsapp.env:/run/partpilot/whatsapp.env:ro
+      - /home/rifqisetiawan/.config/partpilot/gateway-codex.env:/run/partpilot/gateway.env:ro
+    logging: *logging
 volumes:
   demo-pg:
+  wa-state:
 secrets:
   db-owner-password:
     file: /home/rifqisetiawan/.config/partpilot/demo-db-owner-password

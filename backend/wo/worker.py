@@ -3,6 +3,7 @@ from decimal import Decimal
 
 import hashlib
 import json
+import os
 import re
 import uuid
 import time
@@ -12,7 +13,7 @@ from psycopg.rows import dict_row
 
 import backend.wo.gateway as gateway
 from backend.wo.knowledge import load_scoped_note
-from backend.wo.matching import match_candidates
+from backend.wo.matching import extract_facts_from_text, match_candidates, normalize_dimensions, normalize_seal_type
 from backend.wo.models import Fact
 from backend.wo.repository import _observe_boundary, get_db_connection, get_scoped_candidates
 
@@ -30,6 +31,60 @@ ALLOWED_KEYS = {
 ALLOWED_SOURCES = {"description", "notes", "answer"}
 ALLOWED_SUFFIXES = {"LLU", "LLB", "LLF", "LLH", "ZZ", "2RS", "DDU", "OPEN"}
 KNOWN_BRANDS = {"NTN", "NSK", "SKF", "KOYO", "FAG", "NACHI"}
+
+
+def prepare_rule_first_extraction(description, notes, accepted_answers, candidates,
+                                  truncated, knowledge_status, clarification_round):
+    """Opt-in shortcut only when explicit physical evidence resolves one row."""
+    if os.getenv('PARTPILOT_BEARING_RULE_FIRST', '').lower() != 'true':
+        return None
+    text = '\n'.join([description or '', notes or '', *accepted_answers.values()])
+    if not re.search(r'\b(?:bearing|laher)\b', description or '', re.I):
+        return None
+    # These words can change the meaning of an otherwise matching substring.
+    # A quantity in prose also needs the existing model/quantity-conflict path.
+    uncertainty_text = re.sub(r'\btidak\s+tahu\s+kode(?:nya)?\b', '', text, flags=re.I)
+    if re.search(r'\b(?:bukan|jangan|atau|mungkin|kecuali|sepertinya|kayaknya|kemungkinan|agaknya|belum\s+pasti|sekitar|kira.kira|kurang\s+lebih|approximately|about|around|roughly|instead|not|except|maybe|or|qty|jumlah|pcs|buah|pieces)\b|[±~]|\btidak\s+(?!terbaca\b|diketahui\b)', uncertainty_text, re.I):
+        return None
+    facts = []
+    sources = [('description', description or '', None), ('notes', notes or '', None)]
+    sources.extend(('answer', answer, qid) for qid, answer in accepted_answers.items())
+    for source, raw, ref in sources:
+        extracted = extract_facts_from_text(raw, source)
+        remainder = raw
+        for fact in extracted:
+            for evidence in fact.evidence:
+                evidence.source_ref = ref
+                remainder = remainder.replace(evidence.raw_substring, '')
+            facts.append(fact)
+        if re.search(r'\d', remainder):
+            return None  # unparsed sizes, quantities, or modifiers
+    if not {'brand', 'dimensions', 'seal_type'}.issubset({f.key for f in facts}):
+        return None
+    matched = match_candidates(candidates, facts, clarification_round=clarification_round,
+                               truncated=truncated, knowledge_status=knowledge_status, input_text=text)
+    if matched['state'] != 'identified':
+        return None
+    encoded = json.dumps({'facts': [fact.model_dump() for fact in facts]})
+    valid, validated, _ = validate_extraction(encoded, description, notes, accepted_answers)
+    return validated if valid else None
+
+
+def execute_extraction(messages, rule_facts):
+    """Run the selected engine; record actual provenance, never a fictitious call."""
+    started = time.monotonic()
+    if rule_facts is not None:
+        result = dict(status='ok', content=json.dumps({'facts': rule_facts}), model='deterministic-bearing-v1')
+        audit = dict(extraction_method='deterministic', gateway_called=False,
+                     requested_model=None, reported_model='deterministic-bearing-v1', timeout=None, max_tokens=None)
+    else:
+        timeout_seconds = gateway.runtime_timeout()
+        result = gateway.call_gateway_completion(messages, model=gateway.DEFAULT_MODEL,
+                                                 timeout=timeout_seconds, max_tokens=4096)
+        audit = dict(extraction_method='model', gateway_called=True,
+                     requested_model=gateway.DEFAULT_MODEL, reported_model=result.get('model', gateway.DEFAULT_MODEL),
+                     timeout=timeout_seconds, max_tokens=4096)
+    return result, time.monotonic() - started, audit
 
 
 def parse_strict_json(content: str) -> Dict[str, Any]:
@@ -196,10 +251,15 @@ def validate_extraction(
                 norm_val = expected_norm
 
             elif f_key == "dimensions":
-                dim_m = re.fullmatch(r"(\d{1,3})\s*[xX*]\s*(\d{1,3})\s*[xX*]\s*(\d{1,3})", raw_sub.strip())
-                if not dim_m:
+                expected_norm = normalize_dimensions(raw_sub)
+                if not expected_norm:
                     return False, None, "dimensions_format_invalid"
-                expected_norm = f"{dim_m.group(1)}x{dim_m.group(2)}x{dim_m.group(3)}"
+                # A verbatim evidence span may include the explicit mm unit;
+                # source scanning still rejects cropped cm/inch/decimal spans.
+                raw_without_mm = re.sub(r'\s+mm$', '', raw_sub.strip(), flags=re.I)
+                if not any(f.key == 'dimensions' and f.evidence[0].raw_substring in (raw_sub.strip(), raw_without_mm)
+                           for f in extract_facts_from_text(source_text, src_field)):
+                    return False, None, 'dimensions_evidence_partial'
                 if norm_val != expected_norm or f_val != expected_norm:
                     return False, None, "dimensions_normalization_mismatch"
 
@@ -219,13 +279,8 @@ def validate_extraction(
 
             elif f_key == "seal_type":
                 sub_lower = raw_sub.strip().lower()
-                if sub_lower in ("contact both sides", "karet rapat dua sisi"):
-                    expected_norm = "contact_both_sides"
-                elif sub_lower in ("metal shields both sides", "metal shield both sides", "plat dua sisi"):
-                    expected_norm = "metal_shield_both_sides"
-                elif sub_lower in ("noncontact both sides", "karet nonkontak dua sisi"):
-                    expected_norm = "noncontact_both_sides"
-                else:
+                expected_norm = normalize_seal_type(raw_sub)
+                if not expected_norm:
                     return False, None, f"seal_type_unsupported_{sub_lower}"
                 if norm_val != expected_norm or f_val != expected_norm:
                     return False, None, "seal_type_normalization_mismatch"
@@ -244,6 +299,25 @@ def validate_extraction(
             "evidence": valid_evidence,
         })
 
+    # Explicit physical observations must survive a model omission. This uses
+    # only source text; catalog notes never become user-request evidence.
+    sources = [('description', description or '', None), ('notes', notes or '', None)]
+    sources.extend(('answer', text, qid) for qid, text in accepted_answers.items())
+    existing = {(f['key'], f['value'], f['source'], ev.get('source_ref'))
+                for f in validated_facts for ev in f['evidence']}
+    for source, text, ref in sources:
+        for fact in extract_facts_from_text(text, source):
+            if fact.key not in ('dimensions', 'seal_type'):
+                continue
+            signature = (fact.key, fact.value, source, ref)
+            if signature in existing:
+                continue
+            for evidence in fact.evidence:
+                evidence.source_ref = ref
+            validated_facts.append(fact.model_dump())
+            existing.add(signature)
+    if len(validated_facts) > 64:
+        return False, None, 'facts_exceeds_max_64'
     return True, validated_facts, None
 
 
@@ -376,23 +450,108 @@ def process_job(job: Dict[str, Any]) -> Dict[str, Any]:
         # Step 3: Candidate retrieval in scope
         candidates, truncated = get_scoped_candidates(session["company"], warehouse_id, "Bearing")
 
-        # Step 4: Check call reservations budget (max 2 per job)
-        reservations_count = 0
+        accepted_answers: Dict[str, str] = {}
         for ev in events:
             payload = ev["payload"]
-            if isinstance(payload, dict):
-                p_status = str(payload.get("status", "")).lower()
-                p_kind = str(payload.get("kind", ev.get("event_type", ""))).lower()
-                if ("reserv" in p_status or "reserv" in p_kind) and str(payload.get("job_id")) == str(job_id):
-                    reservations_count += 1
+            if isinstance(payload, dict) and "answers" in payload:
+                for a in payload["answers"]:
+                    qid = a.get("question_id")
+                    ans_text = a.get("answer")
+                    if qid and ans_text:
+                        accepted_answers[qid] = ans_text
 
-        if reservations_count >= 2:
+        input_data = session.get("input") or {}
+        desc_text = input_data.get("description", "")
+        notes_text = input_data.get("notes", "")
+        rule_facts = prepare_rule_first_extraction(desc_text, notes_text, accepted_answers, candidates,
+            truncated, note_info.get("status", "available"), session.get("clarification_round", 0))
+        ordinal = None
+        if rule_facts is None:
+            # Step 4: Check call reservations budget (max 2 per job)
+            reservations_count = 0
+            for ev in events:
+                payload = ev["payload"]
+                if isinstance(payload, dict):
+                    p_status = str(payload.get("status", "")).lower()
+                    p_kind = str(payload.get("kind", ev.get("event_type", ""))).lower()
+                    if ("reserv" in p_status or "reserv" in p_kind) and str(payload.get("job_id")) == str(job_id):
+                        reservations_count += 1
+
+            if reservations_count >= 2:
+                with conn.transaction():
+                    with conn.cursor() as cur:
+                        cur.execute("SET statement_timeout = 2000;")
+                        cur.execute("SELECT pg_backend_pid();")
+                        backend_pid = cur.fetchone()[0]
+
+                        cur.execute("SELECT fence FROM pp.wo_identification_job WHERE id = %s FOR UPDATE;", (job_id,))
+                        f_row = cur.fetchone()
+                        if not f_row or f_row[0] != fence:
+                            job["status"] = "stale"
+                            return job
+
+                        cur.execute("SELECT COALESCE(MAX(seq), 0) + 1 FROM pp.wo_identification_event WHERE session_id = %s;", (session_id,))
+                        next_seq = cur.fetchone()[0]
+
+                        err = {"code": "call_budget_exhausted", "message": "Max 2 completion calls per job", "retriable": False}
+                        res_dict = {
+                            "state": "failed",
+                            "error": err,
+                            "facts": [],
+                            "conflicts": [],
+                            "questions": [],
+                            "candidates": [],
+                            "truncated": truncated,
+                            "identified_candidate": None,
+                            "identified_item_code": None,
+                            "knowledge_refs": [{
+                                "path": note_info.get("path"),
+                                "sha256": note_info.get("sha256"),
+                                "source_status": note_info.get("source_status", "UNKNOWN"),
+                                "snapshot_version": note_info.get("snapshot_version", "v1"),
+                            }],
+                        }
+
+                        cur.execute("""
+                            UPDATE pp.wo_identification_session
+                            SET state = 'failed',
+                                version = version + 1,
+                                result = %s,
+                                updated_at = now()
+                            WHERE id = %s;
+                        """, (json.dumps(res_dict), session_id))
+
+                        cur.execute("UPDATE pp.wo_identification_job SET status = 'failed', error = %s, updated_at = now() WHERE id = %s;", (json.dumps(err), job_id))
+
+                        cur.execute("""
+                            INSERT INTO pp.wo_identification_event (session_id, seq, event_type, input_revision, payload)
+                            VALUES (%s, %s, 'result_applied', %s, %s);
+                        """, (session_id, next_seq, input_revision, json.dumps({
+                            "session_id": str(session_id),
+                            "job_id": str(job_id),
+                            "fence": fence,
+                            "input_revision": input_revision,
+                            "state": "failed",
+                            "error": err,
+                        })))
+
+                        context = {
+                            "session_id": str(session_id),
+                            "job_id": str(job_id),
+                            "input_revision": input_revision,
+                            "fence": fence,
+                            "backend_pid": backend_pid,
+                        }
+                        _observe_boundary("result_before_commit", context)
+
+                job["status"] = "failed"
+                return job
+
+            # Reserve next slot ordinal BEFORE network call
+            ordinal = reservations_count + 1
             with conn.transaction():
                 with conn.cursor() as cur:
                     cur.execute("SET statement_timeout = 2000;")
-                    cur.execute("SELECT pg_backend_pid();")
-                    backend_pid = cur.fetchone()[0]
-
                     cur.execute("SELECT fence FROM pp.wo_identification_job WHERE id = %s FOR UPDATE;", (job_id,))
                     f_row = cur.fetchone()
                     if not f_row or f_row[0] != fence:
@@ -402,103 +561,21 @@ def process_job(job: Dict[str, Any]) -> Dict[str, Any]:
                     cur.execute("SELECT COALESCE(MAX(seq), 0) + 1 FROM pp.wo_identification_event WHERE session_id = %s;", (session_id,))
                     next_seq = cur.fetchone()[0]
 
-                    err = {"code": "call_budget_exhausted", "message": "Max 2 completion calls per job", "retriable": False}
-                    res_dict = {
-                        "state": "failed",
-                        "error": err,
-                        "facts": [],
-                        "conflicts": [],
-                        "questions": [],
-                        "candidates": [],
-                        "truncated": truncated,
-                        "identified_candidate": None,
-                        "identified_item_code": None,
-                        "knowledge_refs": [{
-                            "path": note_info.get("path"),
-                            "sha256": note_info.get("sha256"),
-                            "source_status": note_info.get("source_status", "UNKNOWN"),
-                            "snapshot_version": note_info.get("snapshot_version", "v1"),
-                        }],
-                    }
-
-                    cur.execute("""
-                        UPDATE pp.wo_identification_session
-                        SET state = 'failed',
-                            version = version + 1,
-                            result = %s,
-                            updated_at = now()
-                        WHERE id = %s;
-                    """, (json.dumps(res_dict), session_id))
-
-                    cur.execute("UPDATE pp.wo_identification_job SET status = 'failed', error = %s, updated_at = now() WHERE id = %s;", (json.dumps(err), job_id))
-
                     cur.execute("""
                         INSERT INTO pp.wo_identification_event (session_id, seq, event_type, input_revision, payload)
-                        VALUES (%s, %s, 'result_applied', %s, %s);
+                        VALUES (%s, %s, 'gateway_call_reserved', %s, %s);
                     """, (session_id, next_seq, input_revision, json.dumps({
-                        "session_id": str(session_id),
+                        "status": "reserved",
                         "job_id": str(job_id),
-                        "fence": fence,
                         "input_revision": input_revision,
-                        "state": "failed",
-                        "error": err,
+                        "fence": fence,
+                        "ordinal": ordinal,
+                        "invocation_ordinal": ordinal,
                     })))
-
-                    context = {
-                        "session_id": str(session_id),
-                        "job_id": str(job_id),
-                        "input_revision": input_revision,
-                        "fence": fence,
-                        "backend_pid": backend_pid,
-                    }
-                    _observe_boundary("result_before_commit", context)
-
-            job["status"] = "failed"
-            return job
-
-        # Reserve next slot ordinal BEFORE network call
-        ordinal = reservations_count + 1
-        with conn.transaction():
-            with conn.cursor() as cur:
-                cur.execute("SET statement_timeout = 2000;")
-                cur.execute("SELECT fence FROM pp.wo_identification_job WHERE id = %s FOR UPDATE;", (job_id,))
-                f_row = cur.fetchone()
-                if not f_row or f_row[0] != fence:
-                    job["status"] = "stale"
-                    return job
-
-                cur.execute("SELECT COALESCE(MAX(seq), 0) + 1 FROM pp.wo_identification_event WHERE session_id = %s;", (session_id,))
-                next_seq = cur.fetchone()[0]
-
-                cur.execute("""
-                    INSERT INTO pp.wo_identification_event (session_id, seq, event_type, input_revision, payload)
-                    VALUES (%s, %s, 'gateway_call_reserved', %s, %s);
-                """, (session_id, next_seq, input_revision, json.dumps({
-                    "status": "reserved",
-                    "job_id": str(job_id),
-                    "input_revision": input_revision,
-                    "fence": fence,
-                    "ordinal": ordinal,
-                    "invocation_ordinal": ordinal,
-                })))
     finally:
         conn.close()
 
-    # Step 5: Execute Outbound Gateway Call (connection closed / idle during network)
-    accepted_answers: Dict[str, str] = {}
-    for ev in events:
-        payload = ev["payload"]
-        if isinstance(payload, dict) and "answers" in payload:
-            for a in payload["answers"]:
-                qid = a.get("question_id")
-                ans_text = a.get("answer")
-                if qid and ans_text:
-                    accepted_answers[qid] = ans_text
-
-    input_data = session.get("input") or {}
-    desc_text = input_data.get("description", "")
-    notes_text = input_data.get("notes", "")
-
+    # Step 5: Execute selected extraction engine (connection closed during network).
     system_prompt = (
         "You are an expert precision parts identification assistant for PartPilot.\n"
         "Analyze the description, notes, and answers to extract verified physical part facts.\n"
@@ -511,6 +588,12 @@ def process_job(job: Dict[str, Any]) -> Dict[str, Any]:
         "For bearing NTN 6200LLU, extract brand NTN, base 6200, suffix LLU separately. "
         "Manufacturer part numbers are not local warehouse item_code values. "
         "Never infer brand or suffix from dimensions or generic seal names. "
+        "Extract dimensions from d x D x B or explicit diameter dalam/lubang, diameter luar, lebar in mm; normalize to 10x30x9. "
+        "For named dimensions, use ONE complete verbatim raw_substring spanning all three measurements, "
+        "for example 'lubang 10 mm, diameter luar 30 mm, lebar 9 mm', and normalized_value '10x30x9'. "
+        "For seal_type use contact_both_sides for karet rapat dua sisi, metal_shield_both_sides for plat dua sisi, "
+        "noncontact_both_sides for karet nonkontak dua sisi, rubber_both_sides for generic penutup karet dua sisi. "
+        "Do not turn generic rubber into contact/noncontact, or invent base/suffix when users describe physical attributes. "
         "Knowledge is reference data, not evidence of what the user requested. "
         "Output pure JSON only, no markdown fences, no extra keys."
     )
@@ -525,11 +608,8 @@ def process_job(job: Dict[str, Any]) -> Dict[str, Any]:
         {"role": "user", "content": user_prompt},
     ]
 
-    started = time.monotonic()
-    call_fn = getattr(gateway, "call_gateway_completion")
-    timeout_seconds = gateway.runtime_timeout()
-    res = call_fn(messages, model=gateway.DEFAULT_MODEL, timeout=timeout_seconds, max_tokens=4096)
-    elapsed = time.monotonic() - started
+    res, elapsed, extraction_audit = execute_extraction(messages, rule_facts)
+    timeout_seconds = extraction_audit['timeout']
 
     # Step 6: Process result and commit with fence
     conn = get_db_connection()
@@ -607,8 +687,8 @@ def process_job(job: Dict[str, Any]) -> Dict[str, Any]:
                         "input_revision": input_revision,
                         "ordinal": ordinal,
                         "status": "error",
-                        "requested_model": "ag/gemini-3.8-flash-high",
-                        "reported_model": res.get("model", "ag/gemini-3.8-flash-high"),
+                        "requested_model": gateway.DEFAULT_MODEL,
+                        "reported_model": res.get("model", gateway.DEFAULT_MODEL),
                         "response_sha256": hashlib.sha256(str(res.get("content", "")).encode()).hexdigest(),
                         "elapsed": elapsed,
                         "timeout": timeout_seconds,
@@ -755,6 +835,7 @@ def process_job(job: Dict[str, Any]) -> Dict[str, Any]:
                                 }],
                             }
 
+                result_dict['extraction'] = extraction_audit
                 cur.execute("""
                     UPDATE pp.wo_identification_session
                     SET state = %s,
@@ -776,12 +857,9 @@ def process_job(job: Dict[str, Any]) -> Dict[str, Any]:
                     "fence": fence,
                     "ordinal": ordinal,
                     "status": "ok",
-                    "requested_model": "ag/gemini-3.8-flash-high",
-                    "reported_model": res.get("model", "ag/gemini-3.8-flash-high"),
-                    "response_sha256": hashlib.sha256(str(res.get("content", "")).encode()).hexdigest(),
+                    **extraction_audit,
+                    "response_sha256": hashlib.sha256(str(res.get("content", "")).encode()).hexdigest() if extraction_audit['gateway_called'] else None,
                     "elapsed": elapsed,
-                    "timeout": timeout_seconds,
-                    "max_tokens": 4096,
                     "state": new_state,
                     "facts": result_dict.get("facts", []),
                     "private_knowledge_snapshot": note_info.get("content_snapshot"),

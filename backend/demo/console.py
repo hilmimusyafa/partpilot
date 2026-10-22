@@ -25,9 +25,9 @@ def config():
     return {'generation':generation(),'context':CONTEXT,'assumptions':ASSUMPTIONS,
       'warehouses':[{'id':f'SYN-WH-0{i}','name':f'Gudang {i}'+(' — aturan belum tersedia' if i>2 else '')} for i in range(1,6)],
       'scenarios':[
-       {'id':'origin_stock','label':'1 · Stok sendiri','description':'Bearing NTN 6200LLU untuk conveyor','quantity':'1','warehouse_id':'SYN-WH-01'},
-       {'id':'transfer_alias','label':'2 · Nama berbeda di gudang 2','description':'Bearing NTN 6200LLU untuk conveyor','quantity':'6','warehouse_id':'SYN-WH-01'},
-       {'id':'vendor_purchase','label':'3 · Perbandingan vendor','description':'Bearing NTN 6200LLU untuk conveyor','quantity':'12','warehouse_id':'SYN-WH-01'},
+       {'id':'origin_stock','label':'1 · Stok sendiri','description':'Bearing conveyor merek NTN, lubang 10 mm, diameter luar 30 mm, lebar 9 mm, karet rapat dua sisi. Kode tidak terbaca.','quantity':'1','warehouse_id':'SYN-WH-01'},
+       {'id':'transfer_alias','label':'2 · Nama berbeda di gudang 2','description':'Bearing NTN ukuran 10x30x9 mm, karet rapat dua sisi. Kode tidak terbaca.','quantity':'6','warehouse_id':'SYN-WH-01'},
+       {'id':'vendor_purchase','label':'3 · Perbandingan vendor','description':'Bearing NTN ukuran 10x30x9 mm, karet rapat dua sisi. Kode tidak terbaca.','quantity':'12','warehouse_id':'SYN-WH-01'},
        {'id':'clarification','label':'4 · Identitas belum lengkap','description':'Bearing conveyor bunyi, perlu diganti','quantity':'1','warehouse_id':'SYN-WH-01'}]}
 
 @router.get('/orders')
@@ -78,6 +78,6 @@ def prepare_locked(run_id,idempotency_key):
         if old[0]['run_id']!=run_id:raise repo.ProcurementError('idempotency_conflict','Key already used')
         return read_comparison(old[0]['id'],initial=True)
     run=get_run(run_id)
-    if any(v['outcome']=='pending' for v in run['vendors']):
-        raise repo.ProcurementError('vendors_pending','Advance simulator before comparison')
+    if run.get('transport')!='whatsapp' and any(v['outcome']=='pending' for v in run['vendors']):
+        raise repo.ProcurementError('vendors_pending','Jalankan simulator sebelum membandingkan')
     return create_comparison(run_id,default_comparison(run),idempotency_key)

@@ -22,9 +22,10 @@ export type Quote = {
 export type Scope = { warehouse_id: string; status: string; item_code?: string; available_qty?: string; actual_qty?: string; reserved_qty?: string; evidence?: { item_name?: string }[] };
 export type Run = {
   id: string; version: number; status: string; quantity: string;
+  transport?: "simulator" | "whatsapp";
   identity: { brand: string; base: string; suffix: string };
   availability: { origin: Scope; alternatives: Scope[]; complete: boolean };
-  vendors: { vendor_id: string; outcome: string; counteroffers_used: number; quote: Quote | null; initial_quote: Quote | null; eligible: boolean }[];
+  vendors: { vendor_id: string; outcome: string; counteroffers_used: number; quote: Quote | null; initial_quote: Quote | null; eligible: boolean; ineligible_reasons?: string[] }[];
   decision?: { option_id: string };
 };
 export type Option = {
@@ -39,6 +40,18 @@ export type Comparison = {
   unexpired_option_ids: string[]; coverage_complete: boolean;
 };
 export type Orders = { generation: number; items: Session[] };
+export type WhatsAppStatus = {
+  connection: string; qr_data_url: string | null; enabled: boolean;
+  can_start: boolean; blocked_reason?: string | null;
+  recipients: { id: string; label: string; registered: boolean | null }[];
+};
+export type WhatsAppConversation = {
+  id: string; run_id: string; vendor_id: string; status: string;
+  fields: Record<string, unknown>; missing_fields: string[];
+  messages: { direction: string; text: string; created_at: string; status?: string }[];
+  counteroffers_used: number; followups_used: number;
+};
+export type WhatsAppConversations = { conversations: WhatsAppConversation[] };
 
 let activeGeneration: number | undefined;
 export async function api<T>(path: string, body?: unknown, key?: string): Promise<T> {
@@ -75,5 +88,11 @@ const labels: Record<string, string> = {
   pending: "Belum dihubungi", no_valid_quote: "Belum ada penawaran valid", missing_recovery_assumptions: "Asumsi pemulihan belum lengkap",
   expired_quote: "Penawaran kedaluwarsa", not_found: "Barang belum ditemukan", not_searched: "Tidak perlu pencarian lanjutan",
   fulfilled_source: "Stok asal mencukupi", sourcing: "Mencari sumber alternatif",
+  connected: "Terhubung", open: "Terhubung", disconnected: "Belum terhubung", connecting: "Menghubungkan", close: "Koneksi terputus",
+  awaiting_reply: "Menunggu balasan vendor", awaiting_response: "Menunggu balasan vendor", awaiting_fields: "Menunggu kelengkapan penawaran",
+  ready: "Penawaran lengkap", sent: "Pesan terkirim", sending: "Mengirim pesan", qr: "Pindai QR untuk menghubungkan",
+  uncertain: "Pengiriman belum dapat dipastikan; tidak diulang otomatis", cancelled: "Pengiriman dibatalkan", received: "Balasan diterima", processed: "Balasan diproses",
+  waiting: "Menunggu balasan vendor", partial: "Penawaran belum lengkap", closed: "Percakapan ditutup", negotiation_pending: "Menunggu jawaban negosiasi", identity: "Identitas bearing",
+  unit_price: "Harga per buah", qty_available: "Stok tersedia", shipping_amount: "Ongkir", tax_amount: "Pajak", delivered_eta: "Estimasi tiba", valid_until: "Berlaku sampai", processing_hours: "Waktu proses (jam)",
 };
 export function label(value: string): string { return labels[value] || value.replaceAll("_", " "); }

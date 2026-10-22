@@ -13,6 +13,8 @@ def load(path,allowed):
 
 def main():
     load('/run/partpilot/runtime.env',{'DATABASE_URL','PARTPILOT_DEMO_PASSWORD','PARTPILOT_PUBLIC_ORIGIN'})
+    if Path('/run/partpilot/whatsapp.env').exists():
+        load('/run/partpilot/whatsapp.env',{'PARTPILOT_WA_INTERNAL_TOKEN'})
     if sys.argv[1]=='api':
         if not os.environ.get('PARTPILOT_DEMO_PASSWORD'):raise RuntimeError('Missing demo login')
         import uvicorn
@@ -36,6 +38,10 @@ def main():
                 # Do not log connection strings, model messages or credential values.
                 print('Worker tick failed:',type(exc).__name__,flush=True)
             time.sleep(1)
-    else:raise ValueError('Expected api or worker')
+    elif sys.argv[1]=='whatsapp':
+        load('/run/partpilot/gateway.env',{'HERMES_9ROUTER_API_KEY','HERMES_9ROUTER_BASE_URL'})
+        from backend.whatsapp.worker import run
+        run()
+    else:raise ValueError('Expected api, worker or whatsapp')
 
 if __name__=='__main__':main()
