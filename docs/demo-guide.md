@@ -85,4 +85,6 @@ Jika ingin menguji WhatsApp pada cabang kandidat, ganti hanya baris kode pada fo
 
 **Batas:** stok/harga/ETA/operasi simulasi; ISO mata uang benchmark tidak diketahui dan pemetaan rupiah bukan kurs nyata; tidak ada prediksi umur bearing atau tanggal kegagalan. Provider aktif 9router; Vertex project `hackathon-primestep-16` menunggu credential.
 
-Alur kini tersedia di beranda dan halaman Teknisi. Meja manajer membuka WO yang sama. Alamat `/maintenance/` lama mengarahkan ke beranda; tidak ada menu halaman demo atau tombol reset pada navigasi utama. Label sumber dan asumsi simulasi tetap ditampilkan.
+Halaman utama membuka alur Teknisi. Navigasi atas berisi **Teknisi**, **Meja manajer**, dan tombol **Reset**; Meja manajer membuka WO yang sama. Alamat `/maintenance/` lama mengarahkan ke halaman utama. Label sumber dan asumsi simulasi tetap ditampilkan.
+
+Untuk mengulang seluruh sesi dari awal, klik **Reset** di kanan atas, ketik `RESET DEMO`, lalu klik **Reset sesi**. Reset berlaku untuk semua pengguna: WO, penawaran, dan keputusan aktif dibersihkan, stok sintetis dipulihkan, dan percakapan WhatsApp aktif ditutup. Bukti OEM dan audit tetap disimpan; pesan WhatsApp yang sudah terkirim tidak ditarik kembali. Setelah reset, aplikasi kembali ke halaman utama dengan form baru. Klik **Batal** untuk menutup konfirmasi tanpa mengubah data.

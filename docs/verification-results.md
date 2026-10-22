@@ -4,13 +4,15 @@ Tanggal pengujian: **23 Oktober 2026 WIB**. [Buka PartPilot](https://partpilot.r
 
 ## Release dan data aktif
 
-- VPS tetap menjadi host. `current-demo` menunjuk ke `releases/main-20261023-r6`.
-- API dan worker memakai image `partpilot-demo:20261023-main-r6`; bridge WhatsApp tetap memakai image yang sudah ada.
+- VPS tetap menjadi host. `current-demo` menunjuk ke `releases/main-20261023-r7`.
+- API dan worker memakai image `partpilot-demo:20261023-main-r7`; bridge WhatsApp tetap memakai image yang sudah ada.
 - Backup database dan konfigurasi dibuat sebelum migrasi, di direktori privat `private/before-evidence-20261022T205803Z` pada root PartPilot VPS. Credential tidak dimasukkan ke dokumen atau repository.
 - Migration020–023 terpasang. API publik telah mengembalikan **10 record bukti**, dengan URL sumber dan SHA-256; seluruhnya `is_local_asset_history=false`.
 - Provider aktif **9router** sesuai revisi pengguna. Adapter Vertex tersedia, tetapi autentikasi dan pengujian live project `hackathon-primestep-16` belum dilakukan.
 
 ## Pengujian otomatis
+
+Pembaruan navigasi **main-20261023-r7**: tab Beranda dihapus; Teknisi mengarah ke halaman utama dan tetap aktif pada `/technician/`. Tombol **Reset** kembali tersedia di kanan atas. Build 13 halaman, TypeScript, dan lint berhasil. Uji browser memverifikasi dialog terbuka, tombol **Reset sesi** terkunci sebelum teks `RESET DEMO` diisi, lalu aktif setelah teks sesuai; **Batal** menutup dialog. Reset database tidak dijalankan dalam uji ini; generation tetap **9** dan 10 bukti OEM tetap tersedia. API aktif sehat. Panduan demo diperbarui dengan langkah reset dan dampaknya.
 
 Pembaruan halaman utama pada release **main-20261023-r6**: alur maintenance tampil langsung di `/` dan `/technician/`; `/maintenance/` lama mengalihkan ke beranda. Menu halaman demo dan reset dihapus dari navigasi. Meja manajer mendukung benchmark conveyor makanan dengan pengakuan asumsi eksplisit; perubahan penawaran memerlukan pembaruan perbandingan sehingga tidak memakai kalkulator lama tanpa persetujuan.
 
