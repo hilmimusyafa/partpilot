@@ -85,6 +85,8 @@ def arrange_quoted_conversation(cluster):
     assert published is not None
     assert call('wa_apply', conversation['id'], conversation['version'], fields,
                 'quoted', published, [mid])
+    from backend.procurement.negotiation import plan
+    plan(run['id'])
     return run['id'], conversation['id'], fields
 
 
@@ -114,7 +116,8 @@ def test_counteroffer_and_followup_budgets_are_database_enforced(wa):
     from backend.whatsapp.repository import call
     from concurrent.futures import ThreadPoolExecutor
     _,cid,_=arrange_quoted_conversation(wa)
-    def reserve(_):return call('wa_enqueue',cid,'price_counteroffer','one counter',{'target_unit_price':'142500'})
+    target=wa.sql('SELECT target_unit_price::text target FROM pp.demo_negotiation_vendor WHERE run_id=(SELECT run_id FROM pp.wa_conversation WHERE id=%s)',(cid,))[0]['target']
+    def reserve(_):return call('wa_enqueue',cid,'price_counteroffer','one counter',{'target_unit_price':target})
     with ThreadPoolExecutor(max_workers=3) as pool:rows=list(pool.map(reserve,range(3)))
     assert len({r['id'] for r in rows})==1
     with pytest.raises(Exception):call('wa_enqueue',cid,'price_counteroffer','another counter',{'target_unit_price':'140000'})
@@ -131,7 +134,7 @@ def test_review_changed_vendor_status_rejects_old_comparison(wa, new_status):
     # Preserve the earlier RFQ object while the new counter response can be null.
     if new_status == 'no_stock':
         counter = call('wa_enqueue', conversation_id, 'price_counteroffer', 'Owned review counter',
-                       {'target_unit_price': '142500'})
+                       {'target_unit_price': wa.sql('SELECT target_unit_price::text target FROM pp.demo_negotiation_vendor WHERE run_id=%s',(run_id,))[0]['target']})
         call('wa_delivery', counter['id'], 'sending', None)
         call('wa_delivery', counter['id'], 'sent', 'review-counter-' + uuid.uuid4().hex)
     mid = call('wa_inbound', 'review-change-' + uuid.uuid4().hex, '628123456789',

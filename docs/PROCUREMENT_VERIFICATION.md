@@ -1,5 +1,7 @@
 # Verification record — 22 October 2026
 
+> Historical first backend delivery. Current complete-demo evidence appears in `superpowers/plans/2026-10-22-complete-demo.md` and current behavior in `DEMO_DEPLOYMENT.md`. Statements below about absent auth, WhatsApp and POs describe that earlier delivery, not the deployed release.
+
 Implementation is a synthetic backend demo, not a production release or native Hermes workflow acceptance. No main database migration, service restart, commit/push, or real vendor message was performed.
 
 ## Evidence and scope

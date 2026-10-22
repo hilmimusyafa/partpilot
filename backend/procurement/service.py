@@ -75,7 +75,9 @@ def get_run(rid, initial=False):
     row=repo.run_row(rid);events=[] if initial else repo.exchanges(rid);at=row["created_at"] if initial else now()
     vendors=vendor_views(row,events,at)
     transport='whatsapp' if any(v['vendor_id'].startswith('WA-') for v in vendors) else 'simulator'
+    from .negotiation import view
     return {'api_version':'procurement-demo-v1','id':rid,'version':1 if initial else row['version'],**row['snapshot'],'transport':transport,
+            'negotiation':None if initial else view(rid),
             'vendors':vendors,'exchanges':events,'as_of':at.isoformat(),'procurement_executed':False,
             'repair_completed':False,'decision':None if initial else next(iter(repo.query('SELECT * FROM pp.demo_decision WHERE run_id=%s',(rid,))),None)}
 
@@ -102,21 +104,13 @@ def advance(rid,transport=None):
         old=next((e for e in repo.exchanges(rid) if e['vendor_id']==vendor and e['kind']=='rfq'),None)
         event=old or repo.call('demo_enqueue',rid,vendor,'rfq',payload)
         deliver(event,transport)
-    # Freeze negotiation basis to initial valid quotes; revisions never trigger
-    # another round or change the target of an already reserved counteroffer.
-    initial=[e for e in repo.exchanges(rid) if e['kind']=='rfq']
-    valid=[]
-    for e in initial:
-        q=(e['response'] or {}).get('quote')
-        if not quote_reasons(q,s,now()):valid.append((e['vendor_id'],q))
-    quantity=Decimal(s['quantity'])
-    delivered=lambda q:quantity*Decimal(q['unit_price'])+Decimal(q['tax_amount'])+Decimal(q['shipping_amount'])
-    benchmark=min((delivered(q) for _,q in valid),default=None)
-    for vendor,q in valid:
+    from .negotiation import plan
+    round_plan=plan(rid)
+    for planned in (round_plan or {}).get('vendors',[]):
+        vendor=planned['vendor_id']
         previous=next((e for e in repo.exchanges(rid) if e['vendor_id']==vendor and e['kind']=='price_counteroffer'),None)
         if previous:deliver(previous,transport);continue
-        if benchmark is None or benchmark>=delivered(q):continue
-        target=max(Decimal(0),(benchmark-Decimal(q['tax_amount'])-Decimal(q['shipping_amount']))/quantity).quantize(Decimal('.01'),rounding=ROUND_DOWN)
-        event=repo.call('demo_enqueue',rid,vendor,'price_counteroffer',dict(payload,target_unit_price=str(target)))
+        if planned['status']!='planned':continue
+        event=repo.call('demo_enqueue',rid,vendor,'price_counteroffer',dict(payload,target_unit_price=planned['target_unit_price']))
         deliver(event,transport)
     return get_run(rid)

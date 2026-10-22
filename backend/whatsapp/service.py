@@ -96,10 +96,13 @@ def next_message(c):
         (inbound[-1]['received_at'] or inbound[-1]['created_at'])>=counter['delivered_at'] and
         query("SELECT 1 FROM pp.demo_outbox WHERE run_id=%s AND vendor_id=%s AND kind='price_counteroffer' AND response IS NULL",(c['run_id'],c['vendor_id'])))
     if c['status']=='quoted' and not counter:
-        target=(Decimal(c['fields']['unit_price'])*Decimal('.95')).quantize(Decimal('1'))
-        if target<=0:return
+        from backend.procurement.negotiation import plan
+        round_plan=plan(c['run_id'])
+        planned=next((v for v in (round_plan or {}).get('vendors',[]) if v['vendor_id']==c['vendor_id']),None)
+        if not planned or planned['status']!='planned':return
+        target=Decimal(planned['target_unit_price'])
         price=f'{target:,.0f}'.replace(',','.')
-        call('wa_enqueue',c['id'],'price_counteroffer',f"Terima kasih penawarannya, Kak. Untuk kebutuhan demo {c['snapshot']['quantity']} pcs ini, apakah harga satuannya bisa Rp{price} per pcs? Ini satu kali pengajuan harga dari kami; syarat lain tetap mengacu penawaran Kakak. Kalau belum bisa, harga awal tetap kami catat. Belum ada konfirmasi pembelian ya Kak 🙏",{'target_unit_price':str(target)})
+        call('wa_enqueue',c['id'],'price_counteroffer',f"Terima kasih penawarannya, Kak. Untuk kebutuhan demo {c['snapshot']['quantity']} pcs ini, apakah bisa dibantu Rp{price} per pcs? Ongkir, pajak, dan jadwal tetap mengikuti penawaran tadi. Mohon balas harga per pcs yang disetujui, atau 'tidak bisa nego' jika harga awal sudah pas. Ini belum konfirmasi pembelian ya Kak 🙏",{'target_unit_price':str(target)})
         return
     missing=[k for k in FIELDS if k not in c['fields']]
     if need_counter_confirmation and 'unit_price' not in missing:missing.append('unit_price')

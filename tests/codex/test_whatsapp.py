@@ -94,7 +94,8 @@ def wa(monkeypatch):
     with c.connection() as conn:
         conn.execute("DELETE FROM erp.company WHERE name LIKE 'foreign-%'")
         install_demo(conn,allow_test_database=True)
-        conn.execute((Path(__file__).parents[2]/'backend/db/014_whatsapp.sql').read_text(),prepare=False)
+        if not conn.execute("SELECT to_regclass('pp.wa_recipient') ready").fetchone()['ready']:
+            conn.execute((Path(__file__).parents[2]/'backend/db/014_whatsapp.sql').read_text(),prepare=False)
         conn.execute("INSERT INTO pp.wa_recipient(id,phone,label,opted_in,consent_source,demo_invite_until,destination) VALUES('WA-DEMO-1','628123456789','Vendor demo 1',true,'owned-test',now()+interval '1 hour','Cikarang (dummy)')")
     yield c
     c.close()

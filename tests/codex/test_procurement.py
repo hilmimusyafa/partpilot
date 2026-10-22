@@ -18,6 +18,7 @@ def db():
         migration = ROOT / 'backend/db/012_procurement_demo.sql'
         if migration.exists():
             conn.execute(migration.read_text(), prepare=False)
+            conn.execute((ROOT/'backend/db/016_negotiation_policy.sql').read_text(), prepare=False)
     try:
         yield c
     finally:
@@ -57,13 +58,13 @@ def test_all_vendor_outcomes_and_restart_safe_counteroffer(db):
     assert outcomes['SIM-SILENT']=='no_response'
     assert outcomes['SIM-REFUSE']=='negotiation_refused'
     assert outcomes['SIM-REVISE']=='revised_quote'
-    assert outcomes['SIM-ENOUGH']=='quoted'
+    assert outcomes['SIM-ENOUGH']=='revised_quote'
     # Every API invocation uses a new Python process, including retries.
     with ThreadPoolExecutor(max_workers=3) as ex:
         repeated=list(ex.map(lambda _:advance(db,run),range(3)))
     counts=db.sql("SELECT vendor_id,count(*) n FROM pp.demo_outbox WHERE kind='price_counteroffer' GROUP BY vendor_id")
     assert counts and all(r['n']==1 for r in counts)
-    assert {r['vendor_id'] for r in counts}=={'SIM-REFUSE','SIM-REVISE'}
+    assert {r['vendor_id'] for r in counts}=={'SIM-ENOUGH','SIM-REFUSE','SIM-REVISE'}
     assert all(v['id']==out['id'] for v in repeated)
     payloads=json.dumps(db.sql('SELECT payload FROM pp.demo_outbox'))
     assert not any(k in payloads for k in ['competitor','downtime','contribution','benchmark'])
@@ -124,7 +125,9 @@ def test_comparison_ranks_complete_options_but_manager_decides(db):
     assert first['status']==201,first
     comparison=first['body']; eligible=comparison['eligible_complete_options']
     assert eligible[0]['source_id']=='SIM-REVISE'
-    assert eligible[0]['economics']['future_relevant_option_total']=='1384499.96'
+    # Frozen initial total1,620,000 ->90%=1,458,000; REVISE target131444/pc.
+    # This separately supplied comparison adds13,500 lost contribution +1,000 recovery.
+    assert eligible[0]['economics']['future_relevant_option_total']=='1222496.00'
     assert {'SIM-SHORT','SIM-SILENT'}<={o['source_id'] for o in comparison['unrankable_options']}
     assert db.sql('SELECT * FROM pp.demo_decision')==[]
     fresh=db.api('GET',f"/api/v1/demo/comparisons/{comparison['id']}")

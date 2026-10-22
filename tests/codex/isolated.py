@@ -66,7 +66,7 @@ class Cluster:
             assert {x[0] for x in conn.execute("SELECT nspname FROM pg_namespace WHERE nspname IN ('erp','pp','midea')")} == {'erp','pp','midea'}
         self.env = os.environ.copy()
         self.env.update(TEST_DATABASE_URL=self.dsn, DATABASE_URL=self.dsn,
-                        PYTHONDONTWRITEBYTECODE='1', PYTHONPATH=str(ROOT))
+                        PYTHONDONTWRITEBYTECODE='1', PYTHONPATH=os.pathsep.join(filter(None,(str(ROOT),os.environ.get('PYTHONPATH')))))
         self.fixture = self.provision()
         self.before = self.snapshot()
 

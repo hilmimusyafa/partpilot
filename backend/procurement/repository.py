@@ -25,11 +25,12 @@ def query(sql,params=()):
                  'option_ineligible_or_expired','quote_changed','stock_changed','comparison_not_found',
                  'invalid_source_snapshot','invalid_comparison','item_changed','run_already_exists','unsupported_source_unit','reset_disabled','reset_confirmation_required','generation_conflict','demo_busy'}
         allowed.update({'wa_consent_or_window_required','wa_simulator_already_started','wa_conversation_closed','wa_quote_window_expired','wa_followup_limit','wa_recipient_not_allowed','wa_message_not_found','wa_invalid_delivery_transition','wa_invalid_extraction'})
+        allowed.add('negotiation_plan_mismatch')
         code=msg if msg in allowed else 'procurement_storage_error'
         raise ProcurementError(code,code,409 if code in allowed else 503) from None
 
 def call(name,*args):
-    allowed={'demo_start','demo_enqueue','demo_receive','demo_compare','demo_choose'}
+    allowed={'demo_start','demo_enqueue','demo_receive','demo_compare','demo_choose','demo_plan_negotiation'}
     if name not in allowed:raise ValueError('unsupported database function')
     def encode(value):
         return json.dumps(value,default=lambda v:v.isoformat() if isinstance(v,datetime) else str(v))

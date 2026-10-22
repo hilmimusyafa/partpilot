@@ -19,6 +19,11 @@ NAMED_DIMENSION_PATTERN = re.compile(
     r"\b(?:diameter\s+dalam|lubang)\s*[:=]?\s*(\d{1,3})\s*mm\s*[,;]?\s*"
     r"diameter\s+luar\s*[:=]?\s*(\d{1,3})\s*mm\s*[,;]?\s*"
     r"(?:lebar|tebal)\s*[:=]?\s*(\d{1,3})\s*mm\b", re.I)
+PARTIAL_DIMENSION_PATTERNS = {
+    'inner_diameter_mm': re.compile(r'\b(?:diameter\s+dalam|lubang)\s*[:=]?\s*(\d{1,3})\s*mm\b', re.I),
+    'outer_diameter_mm': re.compile(r'\bdiameter\s+luar\s*[:=]?\s*(\d{1,3})\s*mm\b', re.I),
+    'width_mm': re.compile(r'\b(?:lebar|tebal)\s*[:=]?\s*(\d{1,3})\s*mm\b', re.I),
+}
 ITEM_CODE_PATTERN = re.compile(r"\b([A-Z0-9]+(?:-[A-Z0-9]+)+)\b")
 _SIDES = r"(?:di\s+)?(?:dua|kedua)\s+sisi"
 SEAL_PATTERNS = [
@@ -44,6 +49,11 @@ def normalize_seal_type(text: str) -> Optional[str]:
     return next((value for pattern, value in SEAL_PATTERNS if pattern.fullmatch(text.strip())), None)
 
 
+def normalize_partial_dimension(text: str, key: str) -> Optional[str]:
+    match = PARTIAL_DIMENSION_PATTERNS[key].fullmatch(text.strip())
+    return str(int(match.group(1))) if match and int(match.group(1)) > 0 else None
+
+
 def extract_facts_from_text(text: str, source_field: str = "description") -> List[Fact]:
     """Extract observations only, preserving exact evidence (never derive an MPN)."""
     facts = []
@@ -63,6 +73,11 @@ def extract_facts_from_text(text: str, source_field: str = "description") -> Lis
     for pattern, value in SEAL_PATTERNS:
         for match in pattern.finditer(text or ''):
             add('seal_type', value, match.group())
+    for key, pattern in PARTIAL_DIMENSION_PATTERNS.items():
+        for match in pattern.finditer(text or ''):
+            value = normalize_partial_dimension(match.group(), key)
+            if value:
+                add(key, value, match.group())
     return facts
 
 
@@ -78,6 +93,8 @@ def _physical_metadata(row):
         values = {f.value for f in facts if f.key == key}
         if len(values) == 1:
             result[key] = next(iter(values))
+    if 'dimensions' in result:
+        result.update(zip(PARTIAL_DIMENSION_PATTERNS, result['dimensions'].split('x')))
     return result
 
 
@@ -100,9 +117,16 @@ def match_candidates(
     if has_unsupported_modifier(input_text) or re.search(r'\b(?:C[1-5]|CN|P[0-9])\b', input_text, re.I):
         return outcome('needs_review', reason='unsupported_designation_modifier')
 
-    keys = ('brand', 'base', 'suffix', 'item_code', 'item_name', 'dimensions', 'seal_type')
+    keys = ('brand', 'base', 'suffix', 'item_code', 'item_name', 'dimensions', 'seal_type', *PARTIAL_DIMENSION_PATTERNS)
     values = {k: {f.value.upper() if k in ('brand', 'base', 'suffix') else f.value
                   for f in facts if f.key == k} for k in keys}
+    # Each full triplet must agree with every previously observed component.
+    # Expanding only supplied triplets never invents missing measurements.
+    for raw in values['dimensions']:
+        normalized = normalize_dimensions(raw)
+        if normalized:
+            for key, value in zip(PARTIAL_DIMENSION_PATTERNS, normalized.split('x')):
+                values[key].add(value)
     if any(len(v) > 1 for v in values.values()):
         result = outcome('needs_review', reason='contradictory_identity_evidence')
         result['conflicts'] = [dict(key=k, values=sorted(v), message=f'Conflicting {k} observations')
@@ -126,7 +150,7 @@ def match_candidates(
         attributes = _physical_metadata(row)
         mismatch = False
         missing_metadata = not identity
-        for key in ('dimensions', 'seal_type'):
+        for key in ('dimensions', 'seal_type', *PARTIAL_DIMENSION_PATTERNS):
             if key not in known:
                 continue
             if key not in attributes:

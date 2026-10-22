@@ -2,9 +2,9 @@
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { LoaderCircle, CheckCircle2, Sparkles, Search, Save } from "lucide-react";
+import { LoaderCircle, CheckCircle2, Sparkles, Search, Save, Minus, Plus } from "lucide-react";
 import { api, errorMessage, label, type DemoConfig, type Session } from "@/lib/partpilot";
-import { card, DemoShell, ErrorNotice, field, primary, secondary } from "./demo-shell";
+import { accent, card, DemoShell, ErrorNotice, field, primary, secondary } from "./demo-shell";
 
 function WorkOrderContent() {
   const params = useSearchParams();
@@ -14,7 +14,7 @@ function WorkOrderContent() {
   const [session, setSession] = useState<Session | null>(null);
   const [description, setDescription] = useState("");
   const [warehouse, setWarehouse] = useState("SYN-WH-01");
-  const [quantity, setQuantity] = useState("1");
+  const [quantity, setQuantity] = useState("6");
   const [urgency, setUrgency] = useState("Medium");
   const [notes, setNotes] = useState("");
   const [answers, setAnswers] = useState<Record<string, string>>({});
@@ -68,38 +68,37 @@ function WorkOrderContent() {
     } catch (e) { setError(errorMessage(e)); } finally { setBusy(false); }
   }
   const shown = sessionId ? session : null;
-  return <DemoShell title={sessionId ? "Identifikasi work order" : "Form work order"} config={config} compact>
+  return <DemoShell title="Form work order" config={config} compact>
     <ErrorNotice message={error} />
     {!config && !error && <p role="status">Memuat data demo…</p>}
     {sessionId && !shown && !error && <p role="status">Memuat work order…</p>}
     {!sessionId && config && <>
-      <details className={`${card} space-y-3`}><summary className="cursor-pointer font-semibold text-[#0F274A]">Contoh kebutuhan bearing</summary><p className="text-sm text-slate-600">Pilih contoh untuk mengisi form, atau jelaskan sendiri kondisi yang Anda lihat.</p>
-        <div className="flex flex-wrap gap-2">{config.scenarios.map(s => <button key={s.id} className={secondary} disabled={busy} onClick={() => { setDescription(s.description); setQuantity(String(s.quantity)); setWarehouse(s.warehouse_id); setNotes(""); setError(""); }}>{s.label}</button>)}</div>
-      </details>
-      <form className={`${card} space-y-5`} onSubmit={e => { e.preventDefault(); void create(true); }}>
+      <form className="space-y-6 rounded-2xl border border-gray-200/90 bg-white p-6 shadow-xs sm:p-8" onSubmit={e => { e.preventDefault(); void create(true); }}>
         <div className="flex items-start gap-3"><Sparkles className="mt-0.5 shrink-0 text-[#0F274A]" size={24} /><div><h2 className="text-lg font-bold text-[#0F274A]">Deskripsi masalah & kebutuhan suku cadang</h2><p className="mt-1 text-sm text-gray-500">Ceritakan kondisi mesin dan ciri bearing yang terlihat. Kode barang tidak wajib.</p></div></div>
-        <p className="rounded-xl bg-blue-50/70 px-4 py-3 text-sm text-[#17375E]">Conveyor • Lini perakitan AC (demo)</p>
-        <label className="block text-sm font-semibold">Apa masalahnya dan seperti apa bearing yang dibutuhkan?<textarea className={field} rows={4} value={description} onChange={e => setDescription(e.target.value)} placeholder="Bearing conveyor berisik. Diameter dalam 10 mm, luar 30 mm, lebar 9 mm. Penutup karet di kedua sisi, merek NTN terlihat pada bearing." required maxLength={8000} disabled={busy} /><span className="mt-2 block text-xs font-normal leading-relaxed text-gray-500">Tuliskan ukuran yang terukur (diameter dalam × luar × lebar), penutup karet atau logam, dan merek jika terbaca. Bila belum tahu, ceritakan yang terlihat; sistem akan meminta klarifikasi.</span></label>
-        <div className="grid gap-5 sm:grid-cols-3">
-          <label className="text-sm font-semibold">Gudang asal<select value={warehouse} onChange={e => setWarehouse(e.target.value)} className={field} disabled={busy}>{config.warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}</select></label>
-          <label className="text-sm font-semibold">Jumlah (buah)<input type="number" min="1" max="999999" step="1" value={quantity} onChange={e => setQuantity(e.target.value)} className={field} required disabled={busy} /></label>
-          <label className="text-sm font-semibold">Urgensi<select value={urgency} onChange={e => setUrgency(e.target.value)} className={field} disabled={busy}>{["Low", "Medium", "High", "Critical"].map(v => <option key={v}>{v}</option>)}</select></label>
+        <label className="block text-sm font-semibold">Apa masalahnya dan seperti apa bearing yang dibutuhkan?<textarea className={`${field} min-h-[120px] resize-y p-4`} rows={4} value={description} onChange={e => setDescription(e.target.value)} placeholder="Bearing conveyor berisik. Diameter luarnya terukur 30 mm, ciri lainnya belum diperiksa." required maxLength={8000} disabled={busy} /><span className="mt-2 block text-xs font-normal leading-relaxed text-gray-500">Ceritakan ciri yang sudah terlihat. Bila informasi belum cukup, agen akan menanyakan merek, ukuran lainnya, dan penutup bearing.</span></label>
+        <details className="space-y-3"><summary className="cursor-pointer text-xs font-semibold text-[#17375E]">Saran cepat: contoh kebutuhan bearing</summary><div className="flex flex-wrap gap-2">{config.scenarios.map(s => <button type="button" key={s.id} className="cursor-pointer rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-medium hover:bg-gray-100" disabled={busy} onClick={() => { setDescription(s.description); setQuantity(String(s.quantity)); setWarehouse(s.warehouse_id); setNotes(""); setError(""); }}>{s.label}</button>)}</div></details>
+        <div className="grid gap-5 md:grid-cols-2 sm:gap-6">
+          <label className="text-sm font-semibold">Mesin<input className={field} value="Conveyor • Lini perakitan AC (demo)" readOnly /></label>
+          <div><label htmlFor="quantity" className="text-sm font-semibold">Jumlah (buah) <span className="text-red-500">*</span></label><div className="mt-2 flex items-center gap-2"><button type="button" className="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-50" disabled={busy || Number(quantity) <= 1} aria-label="Kurangi jumlah" onClick={() => setQuantity(String(Math.max(1, Number(quantity) - 1)))}><Minus size={16} /></button><input id="quantity" type="number" min="1" max="999999" step="1" value={quantity} onChange={e => setQuantity(e.target.value)} className="h-11 min-w-0 flex-1 rounded-xl border border-gray-200 bg-white text-center text-sm font-semibold outline-none focus:ring-2 focus:ring-[#0F274A]" required disabled={busy} /><button type="button" className="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-50" disabled={busy || Number(quantity) >= 999999} aria-label="Tambah jumlah" onClick={() => setQuantity(String(Math.min(999999, Number(quantity) + 1)))}><Plus size={16} /></button></div></div>
         </div>
+        <label className="block text-sm font-semibold">Gudang asal<select value={warehouse} onChange={e => setWarehouse(e.target.value)} className={field} disabled={busy}>{config.warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}</select></label>
+        <fieldset><legend className="mb-2 text-sm font-semibold">Urgensi</legend><div className="grid grid-cols-2 gap-3 sm:grid-cols-4">{["Low", "Medium", "High", "Critical"].map(value => <button type="button" key={value} disabled={busy} aria-pressed={urgency === value} onClick={() => setUrgency(value)} className={`h-11 cursor-pointer rounded-xl border text-sm font-medium transition-colors ${urgency === value ? "border-[#0F274A] bg-[#0F274A] text-white shadow-xs" : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50"}`}>{value}</button>)}</div></fieldset>
         <label className="block text-sm font-semibold">Catatan tambahan<input value={notes} onChange={e => setNotes(e.target.value)} placeholder="Misalnya: mesin berhenti, seal rusak, tulisan pada bearing tidak terbaca" className={field} maxLength={2000} disabled={busy} /></label>
-        <div className="flex flex-wrap justify-end gap-3 border-t border-gray-100 pt-5"><button type="button" className={secondary} onClick={() => create(false)} disabled={busy}><Save size={16} className="mr-2" />Simpan draf</button><button className={primary} disabled={busy}><Search size={16} className="mr-2" />{busy ? "Mengirim…" : "Cari bearing"}</button></div>
+        <div className="flex flex-wrap justify-end gap-3 pt-2"><button className={accent} disabled={busy}>{busy ? "Mengirim…" : "Cari bearing"}<Search size={16} /></button><button type="button" className={primary} onClick={() => create(false)} disabled={busy}>Simpan draf<Save size={16} className="ml-2" /></button></div>
       </form>
     </>}
     {shown && <>
       <section className={`${card} space-y-4`}>
+        {shown.state === "awaiting_clarification" && <div className="flex justify-center pb-2 pt-1"><div className="inline-flex items-center gap-3 rounded-2xl border border-[#F3D58C] bg-[#F8E8B6] px-5 py-3 shadow-2xs"><span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 border-[#8C6D23] text-xs font-bold text-[#8C6D23]">AI</span><p className="text-sm font-semibold">Lengkapi ciri bearing agar agen dapat menemukan barang yang tepat.</p></div></div>}
         <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-xs text-slate-500 break-all">WO {shown.id}</p><h2 className="mt-2 text-lg font-bold">{shown.description}</h2><p className="mt-2 text-sm text-slate-600">{shown.quantity} buah • {shown.warehouse_id} • {shown.urgency}</p></div><span className="rounded-full bg-blue-50 px-3 py-2 text-sm font-medium">{label(shown.state)}</span></div>
         {["queued", "processing"].includes(shown.state) && <p role="status" className="flex items-center gap-3 rounded-xl bg-slate-50 p-4 text-sm"><LoaderCircle className="animate-spin" size={20} />Identifikasi sedang berjalan. Halaman ini akan memperbarui hasil otomatis; aman untuk dimuat ulang.</p>}
-        {shown.facts?.length > 0 && <dl className="flex flex-wrap gap-3">{shown.facts.map((f, i) => <div key={`${f.key}-${i}`} className="rounded-xl bg-slate-50 px-4 py-2"><dt className="text-xs text-slate-500">{f.key}</dt><dd className="font-semibold">{f.value}</dd></div>)}</dl>}
+        {shown.facts?.length > 0 && <dl className="flex flex-wrap gap-3">{shown.facts.map((f, i) => <div key={`${f.key}-${i}`} className="rounded-xl bg-slate-50 px-4 py-2"><dt className="text-xs text-slate-500">{label(f.key)}</dt><dd className="font-semibold">{f.value}</dd></div>)}</dl>}
         {shown.error && <ErrorNotice message={`${shown.error.code}: ${shown.error.message}`} />}
         {shown.state === "draft" && <button className={primary} disabled={busy} onClick={() => continueSession("submit")}>Kirim draf untuk identifikasi</button>}
         {shown.state === "awaiting_clarification" && <form onSubmit={e => { e.preventDefault(); void continueSession("answers"); }} className="space-y-4 border-t border-slate-200 pt-5">
           <h3 className="font-semibold">Lengkapi informasi bearing</h3><p className="text-sm text-slate-600">Jawab dari hasil pengamatan: ukuran, merek, serta penutup karet atau logam. Kode tidak wajib; jangan menebak jika cirinya belum terlihat.</p>
           {(shown.questions || []).map(q => <label key={q.id} className="block text-sm font-medium">{q.prompt}<input className={field} value={answers[q.id] || ""} onChange={e => setAnswers(a => ({ ...a, [q.id]: e.target.value }))} required maxLength={2000} disabled={busy} />{q.options?.length ? <span className="mt-1 block text-xs text-slate-500">Contoh pilihan: {q.options.join(", ")}</span> : null}</label>)}
-          <button className={primary} disabled={busy || !(shown.questions || []).length}>{busy ? "Mengirim…" : "Kirim klarifikasi"}</button>
+          <div className="flex justify-end border-t border-gray-100 pt-4"><button className={accent} disabled={busy || !(shown.questions || []).length}>{busy ? "Mengirim…" : "Kirim klarifikasi"}</button></div>
         </form>}
         {shown.state === "identified" && <div className="space-y-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4"><p className="flex items-center gap-2 font-semibold"><CheckCircle2 size={20} />Identitas cocok: {shown.identified_item_code}</p><p className="text-sm">Identitas ditemukan. Lanjutkan pencarian stok dan perbandingan sumber; perbaikan mesin belum dinyatakan selesai.</p><Link href={`/manager/decision/?session=${shown.id}`} className={primary}>Lihat stok dan bandingkan sumber</Link></div>}
         {shown.state === "failed" && shown.error?.retriable && <button className={primary} onClick={() => continueSession("retry")} disabled={busy}>Coba identifikasi lagi</button>}

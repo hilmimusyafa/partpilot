@@ -11,11 +11,11 @@ Private files: `whatsapp.env` (bridge bearer token and allowlist), `demo-chat-wo
 ## Operator flow
 
 1. Link an account on the authenticated WhatsApp page. Keep participant opt-in, destination and active invitation window configured on the server.
-2. Create a WO from a physical description, e.g. NTN bearing 10x30x9 mm with contact rubber seals on both sides, quantity 12, origin WH01.
+2. Create a WO from a physical description, e.g. NTN bearing 10x30x9 mm with contact rubber seals on both sides, quantity 6, origin WH01, for the warehouse-plus-vendor scenario. Start with only outer diameter 30 mm to demonstrate clarification; answer NTN, 10x30x9 mm, and contact rubber seals on both sides.
 3. Check stock; choose real WhatsApp rather than the simulator for this run. A single source must fulfill the quantity.
 4. The initial RFQ includes the item, quantity, dummy destination, explicit demo disclaimer and a copyable blank form. Ask participants to use WhatsApp Reply.
 5. Missing or ambiguous information triggers a form containing only missing fields. Unknown is not zero. Nominal total shipping and tax are required; tax percentages alone remain unknown.
-6. Once complete, each eligible vendor can receive one price counteroffer. Pending negotiation remains ineligible for final selection until a usable answer/refusal arrives. The manager chooses; no procurement is executed.
+6. Once complete, each eligible vendor can receive one feasible price proposal from the same frozen negotiation round. The benchmark is the lowest complete eligible total expenditure across warehouse and vendor options; target total is 90% of that benchmark. Target unit price is floor((target total minus that vendor’s non-item costs) / quantity). Infeasible or non-lower targets are skipped. Neither the benchmark nor competitor/internal costs are disclosed to vendors. Pending negotiation remains ineligible for final selection until a usable answer/refusal arrives. The manager chooses; a vendor choice generates a demo PO PDF, but no procurement or PO dispatch is executed.
 
 ## Quote form
 
@@ -41,3 +41,5 @@ Reset closes active conversations, cancels queued sends and preserves the extern
 Owned PostgreSQL tests exercise budgets, consent/window checks, reset history, old-reply correlation, stale quotes and concurrent counteroffer requests. Bridge tests exercise replay/crash behavior without contacting vendors. Synthetic gateway extraction verifies parsing but does not demonstrate real inbound delivery. A sent transport event demonstrates outgoing delivery only; real replies, follow-up and negotiation need consenting participants to answer. Do not claim those were verified from a synthetic extractor probe.
 
 Verification on 2026-10-22: the integrated backend suite passed 124 tests (one live-gateway test excluded). After fixing value-only excerpts from form headings, the affected WhatsApp suites passed 26 tests. A synthetic filled form sent to the real gateway produced all eight required fields in 4.04 seconds; no WhatsApp message was sent by that probe. Browser checks passed complete-description identification, clarification with physical measurements, original blue styling, mobile width and no JavaScript errors. Two authorized outgoing RFQs were transport-confirmed. One real incoming reply was processed and a follow-up with the new form was transport-confirmed. Its ambiguous product/price evidence stayed unknown rather than becoming an invented quote. Complete live quote and counteroffer-response verification remain pending participant input.
+
+Current release verification: 145 isolated backend tests passed, with the explicit live-gateway test excluded. The deployed browser scenario separately exercises actual gateway clarification, warehouse alias lookup, simulator negotiation, manager choices and PDF generation. This does not prove the new price proposal and complete quote loop over real WhatsApp; participant-dependent testing is deferred.

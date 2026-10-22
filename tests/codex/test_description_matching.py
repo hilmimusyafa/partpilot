@@ -285,6 +285,50 @@ def test_uncertain_brand_is_not_treated_as_merely_unknown_code(monkeypatch):
     assert worker.prepare_rule_first_extraction(description, '', answers, WH1, False, 'available', 1) is None
 
 
+PARTIAL_STORY = 'Saat inspeksi sebelum shift, bearing conveyor terasa kasar saat diputar. Diameter luar 30 mm. Kode tidak terbaca.'
+
+
+def test_partial_outer_diameter_is_retained_without_inventing_other_measurements():
+    valid, facts, reason = validate_extraction('{"facts":[]}', PARTIAL_STORY, None, {})
+    assert valid, reason
+    assert [(f['key'], f['value']) for f in facts] == [('outer_diameter_mm', '30')]
+    assert facts[0]['evidence'][0]['raw_substring'] == 'Diameter luar 30 mm'
+    result = match_candidates(WH1, [Fact(**f) for f in facts], input_text=PARTIAL_STORY)
+    assert result['state'] == 'awaiting_clarification'
+    assert {q.key for q in result['questions']} == {'brand', 'dimensions', 'seal_type'}
+
+
+def test_partial_story_complete_answers_use_rules_and_preserve_initial_measurement(monkeypatch):
+    from backend.wo import worker
+    monkeypatch.setenv('PARTPILOT_BEARING_RULE_FIRST', 'true')
+    answers = {'brand': 'NTN', 'dimensions': '10x30x9 mm', 'seal': 'karet rapat dua sisi'}
+    facts = worker.prepare_rule_first_extraction(PARTIAL_STORY, '', answers, WH1, False, 'available', 1)
+    assert facts is not None
+    assert any(f['key'] == 'outer_diameter_mm' and f['source'] == 'description' and f['value'] == '30' for f in facts)
+    assert match_candidates(WH1, [Fact(**f) for f in facts], input_text=PARTIAL_STORY)['state'] == 'identified'
+
+
+def test_partial_outer_diameter_conflicts_with_full_answer_even_if_catalog_matches_answer():
+    answers = {'dimensions': '10x35x9 mm'}
+    valid, facts, reason = validate_extraction('{"facts":[]}', PARTIAL_STORY, None, answers)
+    assert valid, reason
+    # Deliberately provide a catalog row matching the answer; original evidence must still win a review.
+    rows = [dict(WH1[0], description='USER-PROVIDED: 10x35x9 mm; LLU contact both sides')]
+    facts += [dict(key='brand', value='NTN', source='answer', evidence=[]),
+              dict(key='seal_type', value='contact_both_sides', source='answer', evidence=[])]
+    result = match_candidates(rows, [Fact(**f) for f in facts], input_text=PARTIAL_STORY)
+    assert result['state'] == 'needs_review'
+    assert any(c['key'] == 'outer_diameter_mm' and c['values'] == ['30', '35'] for c in result['conflicts'])
+
+
+@pytest.mark.parametrize('raw,value', [('Diameter luar 30 mm', '30'), ('Diameter luar 30 mm', '35')])
+def test_model_partial_measurement_requires_exact_observed_value(raw, value):
+    fact = dict(key='outer_diameter_mm', value=value, source='description', evidence=[dict(
+        source_field='description', raw_substring=raw, normalized_value=value)])
+    valid, _, _ = validate_extraction(json.dumps({'facts': [fact]}), PARTIAL_STORY, None, {})
+    assert valid is (value == '30')
+
+
 @pytest.mark.parametrize('description,expected_state,calls_expected', [
     ('Bearing conveyor merek NTN, lubang 10 mm, diameter luar 30 mm, lebar 9 mm, karet rapat dua sisi. Kode tidak terbaca.', 'identified', 0),
     ('bearing NTN', 'awaiting_clarification', 1),
@@ -328,7 +372,12 @@ def test_persisted_rule_first_worker_uses_honest_audit_and_real_call_budget(monk
         db.close()
 
 
-def test_persisted_clarification_answers_identify_without_a_second_gateway_call(monkeypatch):
+@pytest.mark.parametrize('description,dimension_answer,expected_state', [
+    ('Bearing conveyor bunyi, perlu diganti. Saya tidak tahu kodenya.', '10x30x9 mm', 'identified'),
+    (PARTIAL_STORY, '10x30x9 mm', 'identified'),
+    (PARTIAL_STORY, '10x35x9 mm', 'needs_review'),
+])
+def test_persisted_clarification_answers_identify_without_a_second_gateway_call(monkeypatch, description, dimension_answer, expected_state):
     import uuid
     from isolated import Cluster
     from backend.wo import worker
@@ -338,27 +387,35 @@ def test_persisted_clarification_answers_identify_without_a_second_gateway_call(
         monkeypatch.setenv('PARTPILOT_BEARING_RULE_FIRST', 'true')
         monkeypatch.setattr(worker.gateway, 'call_gateway_completion',
             lambda *args, **kwargs: dict(status='ok', content='{"facts":[]}', model='controlled-initial-extraction'))
-        draft = db.draft('Bearing conveyor bunyi, perlu diganti. Saya tidak tahu kodenya.')
+        draft = db.draft(description, quantity='6')
         submitted = db.api('POST', f"/api/v1/work-orders/{draft['id']}/submit",
             dict(expected_version=draft['version']), uuid.uuid4().hex)
         assert submitted['status'] == 202
         worker.process_job(worker.claim_next_job('clarification-initial'))
         row = db.row(draft['id'])
         assert row['state'] == 'awaiting_clarification'
-        responses = {'brand': 'NTN', 'dimensions': '10x30x9 mm', 'seal_type': 'karet rapat dua sisi'}
+        assert {q['key'] for q in row['result']['questions']} == {'brand', 'dimensions', 'seal_type'}
+        if description == PARTIAL_STORY:
+            assert any(f['key'] == 'outer_diameter_mm' and f['value'] == '30' for f in row['result']['facts'])
+        responses = {'brand': 'NTN', 'dimensions': dimension_answer, 'seal_type': 'karet rapat dua sisi'}
         answers = [dict(question_id=q['id'], answer=responses[q['key']]) for q in row['result']['questions']]
         answered = db.api('POST', f"/api/v1/work-orders/{draft['id']}/answers",
             dict(expected_version=row['version'], answers=answers), uuid.uuid4().hex)
         assert answered['status'] == 202
-        monkeypatch.setattr(worker.gateway, 'call_gateway_completion',
-            lambda *args, **kwargs: pytest.fail('complete clarification must use grounded rules'))
+        if expected_state == 'identified':
+            monkeypatch.setattr(worker.gateway, 'call_gateway_completion',
+                lambda *args, **kwargs: pytest.fail('consistent complete clarification must use grounded rules'))
         worker.process_job(worker.claim_next_job('clarification-complete'))
         row = db.row(draft['id'])
-        assert row['state'] == 'identified'
-        assert row['result']['identified_item_code'] == 'SYN-WH01-NTN-6200LLU'
-        assert row['result']['extraction']['gateway_called'] is False
-        assert {f['evidence'][0]['source_ref'] for f in row['result']['facts']} == {a['question_id'] for a in answers}
+        assert row['state'] == expected_state
+        if expected_state == 'identified':
+            assert row['result']['identified_item_code'] == 'SYN-WH01-NTN-6200LLU'
+            assert row['result']['extraction']['gateway_called'] is False
+            assert {f['evidence'][0]['source_ref'] for f in row['result']['facts'] if f['source'] == 'answer'} == {a['question_id'] for a in answers}
+        else:
+            assert row['result']['identified_item_code'] is None
+            assert any(c['key'] == 'outer_diameter_mm' for c in row['result']['conflicts'])
         events = db.sql("SELECT count(*) n FROM pp.wo_identification_event WHERE session_id=%s AND event_type='gateway_call_reserved'", (draft['id'],))
-        assert events[0]['n'] == 1
+        assert events[0]['n'] == (1 if expected_state == 'identified' else 2)
     finally:
         db.close()

@@ -20,7 +20,7 @@ def install_demo(conn, *, allow_test_database=False):
         for path in ['001_schema.sql','009_bearing_lookup.sql','seed/009_bearing_mvp_synth.sql',
                      '010_work_order_identification.sql','011_work_order_production_context.sql']:
             conn.execute((ROOT/'backend/db'/path).read_text(),prepare=False)
-    for path in ['012_procurement_demo.sql','013_demo_console.sql']:
+    for path in ['012_procurement_demo.sql','013_demo_console.sql','014_whatsapp.sql','015_purchase_orders.sql','016_negotiation_policy.sql']:
         conn.execute((ROOT/'backend/db'/path).read_text(),prepare=False)
     if conn.execute("SELECT 1 FROM erp.company WHERE name<>'SYN-COMPANY-01'").fetchone():
         raise ValueError('Non-demo company present')

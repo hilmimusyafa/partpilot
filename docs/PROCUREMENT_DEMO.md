@@ -1,5 +1,7 @@
 # PartPilot — backend simulator procurement
 
+> Historical backend-only design notes. For the current deployed demo, use [DEMO_DEPLOYMENT.md](DEMO_DEPLOYMENT.md) and [WHATSAPP_DEMO.md](WHATSAPP_DEMO.md). The current release adds authenticated UI, real WhatsApp, one frozen best-total-minus-10% negotiation round and generated demo PO PDFs; the older numerical example and deployment limitations below are historical, not the active demo contract.
+
 Scope: bearing sintetis, satu sumber memenuhi seluruh jumlah, lima scope gudang, lima vendor simulasi. Runtime tetap FastAPI + worker Python + PostgreSQL. Tidak menambah Hermes/LangChain sebagai runtime baru.
 
 ## Perilaku

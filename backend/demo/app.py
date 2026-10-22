@@ -14,6 +14,8 @@ from .console import router
 app.include_router(router)
 from backend.whatsapp.router import router as whatsapp_router
 app.include_router(whatsapp_router)
+from backend.purchase_orders.router import router as purchase_orders_router
+app.include_router(purchase_orders_router)
 
 @app.middleware('http')
 async def demo_boundary(request:Request,call_next):

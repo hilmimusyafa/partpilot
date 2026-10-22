@@ -22,7 +22,7 @@ def main():
             conn.execute(sql.SQL('GRANT INSERT,UPDATE ON pp.wo_identification_session,pp.wo_identification_event,pp.wo_identification_job,pp.wo_identification_idempotency TO {}').format(sql.Identifier(role)))
             conn.execute(sql.SQL('GRANT USAGE,SELECT ON ALL SEQUENCES IN SCHEMA pp TO {}').format(sql.Identifier(role)))
         # Agent/model receives no DSN. Trusted API can execute only approved procurement/reset functions.
-        for signature, in conn.execute("SELECT p.oid::regprocedure::text FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='pp' AND p.proname IN ('demo_start','demo_enqueue','demo_receive','demo_compare','demo_choose','demo_reset')"):
+        for signature, in conn.execute("SELECT p.oid::regprocedure::text FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='pp' AND p.proname IN ('demo_start','demo_enqueue','demo_receive','demo_compare','demo_choose','demo_reset','demo_plan_negotiation','wa_start','wa_enqueue')"):
             conn.execute(sql.SQL('GRANT EXECUTE ON FUNCTION {} TO pp_demo_api').format(sql.SQL(signature)))
         conn.execute('REVOKE ALL ON pp.demo_reset_audit FROM pp_demo_api,pp_demo_worker')
         conn.execute('REVOKE ALL ON pp.demo_control FROM pp_demo_worker')

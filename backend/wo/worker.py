@@ -13,7 +13,10 @@ from psycopg.rows import dict_row
 
 import backend.wo.gateway as gateway
 from backend.wo.knowledge import load_scoped_note
-from backend.wo.matching import extract_facts_from_text, match_candidates, normalize_dimensions, normalize_seal_type
+from backend.wo.matching import (
+    PARTIAL_DIMENSION_PATTERNS, extract_facts_from_text, match_candidates,
+    normalize_dimensions, normalize_partial_dimension, normalize_seal_type,
+)
 from backend.wo.models import Fact
 from backend.wo.repository import _observe_boundary, get_db_connection, get_scoped_candidates
 
@@ -27,6 +30,7 @@ ALLOWED_KEYS = {
     "item_name",
     "dimensions",
     "seal_type",
+    *PARTIAL_DIMENSION_PATTERNS,
 }
 ALLOWED_SOURCES = {"description", "notes", "answer"}
 ALLOWED_SUFFIXES = {"LLU", "LLB", "LLF", "LLH", "ZZ", "2RS", "DDU", "OPEN"}
@@ -263,6 +267,11 @@ def validate_extraction(
                 if norm_val != expected_norm or f_val != expected_norm:
                     return False, None, "dimensions_normalization_mismatch"
 
+            elif f_key in PARTIAL_DIMENSION_PATTERNS:
+                expected_norm = normalize_partial_dimension(raw_sub, f_key)
+                if expected_norm is None or norm_val != expected_norm or f_val != expected_norm:
+                    return False, None, 'partial_dimension_normalization_mismatch'
+
             elif f_key == "quantity":
                 qty_clean = raw_sub.strip()
                 if not re.fullmatch(r"\d{1,6}(\.\d{1,3})?", qty_clean):
@@ -307,7 +316,7 @@ def validate_extraction(
                 for f in validated_facts for ev in f['evidence']}
     for source, text, ref in sources:
         for fact in extract_facts_from_text(text, source):
-            if fact.key not in ('dimensions', 'seal_type'):
+            if fact.key not in ('dimensions', 'seal_type', *PARTIAL_DIMENSION_PATTERNS):
                 continue
             signature = (fact.key, fact.value, source, ref)
             if signature in existing:
@@ -581,7 +590,7 @@ def process_job(job: Dict[str, Any]) -> Dict[str, Any]:
         "Analyze the description, notes, and answers to extract verified physical part facts.\n"
         "Your output must be a single JSON object with EXACTLY ONE key 'facts', containing a list of fact objects.\n"
         "Each fact object must have EXACTLY four keys: 'key', 'value', 'source', 'evidence'.\n"
-        "Allowed keys: 'category', 'quantity', 'brand', 'base', 'suffix', 'item_code', 'item_name', 'dimensions', 'seal_type'.\n"
+        "Allowed keys: 'category', 'quantity', 'brand', 'base', 'suffix', 'item_code', 'item_name', 'dimensions', 'seal_type', 'inner_diameter_mm', 'outer_diameter_mm', 'width_mm'.\n"
         "Allowed sources: 'description', 'notes', 'answer'.\n"
         "Evidence must be a list of 1 to 8 objects with 'source_field' (must equal source), 'raw_substring', 'normalized_value', and optional 'source_ref' (only for answer source).\n"
         "CRITICAL: 'raw_substring' must be an exact, case-sensitive substring found verbatim in the referenced source.\n"
@@ -591,6 +600,10 @@ def process_job(job: Dict[str, Any]) -> Dict[str, Any]:
         "Extract dimensions from d x D x B or explicit diameter dalam/lubang, diameter luar, lebar in mm; normalize to 10x30x9. "
         "For named dimensions, use ONE complete verbatim raw_substring spanning all three measurements, "
         "for example 'lubang 10 mm, diameter luar 30 mm, lebar 9 mm', and normalized_value '10x30x9'. "
+        "IMPORTANT: dimensions requires all three measurements; OMIT dimensions when only one or two are stated. "
+        "Never emit dimensions='30' or invent missing sizes from the catalog. For 'Diameter luar 30 mm', "
+        "emit outer_diameter_mm='30' with raw_substring='Diameter luar 30 mm' and normalized_value='30'. "
+        "Use inner_diameter_mm for diameter dalam/lubang and width_mm for lebar/tebal, with the full named measurement as evidence. "
         "For seal_type use contact_both_sides for karet rapat dua sisi, metal_shield_both_sides for plat dua sisi, "
         "noncontact_both_sides for karet nonkontak dua sisi, rubber_both_sides for generic penutup karet dua sisi. "
         "Do not turn generic rubber into contact/noncontact, or invent base/suffix when users describe physical attributes. "

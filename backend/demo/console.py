@@ -12,10 +12,10 @@ from .bootstrap import CONTEXT
 
 router = APIRouter(prefix='/api/v1/demo')
 KEY=Header(...,alias='Idempotency-Key',min_length=1,max_length=128,pattern=r'^[!-~]+$')
-ASSUMPTIONS={'summary':'Simulasi lini AC: normal 100 unit/jam, terganggu 40 unit/jam. Margin kontribusi Rp500.000/unit (harga Rp3.500.000 dikurangi biaya variabel yang dapat dihindari Rp3.000.000); 25% output hilang dapat dikejar. Instalasi 1 jam + restart 1 jam; biaya pemulihan tambahan Rp250.000. Horizon 24 jam dengan shift kontinu. Gudang donor diasumsikan tidak kehilangan produksi dari stok yang tersedia di luar reservasi. Pajak penawaran demo Rp0; bukan tarif pajak aktual.', 'source':'synthetic-AC-assembly-v1','normal_units_per_hour':100,'disrupted_units_per_hour':40,
+ASSUMPTIONS={'summary':'Demo inspeksi sebelum shift: produksi berikutnya mulai 12 jam setelah WO dibuat. Kerugian produksi dihitung hanya saat jam produksi terjadwal; pemulihan sebelum shift tidak menyebabkan kehilangan output. Normal 100 unit/jam, terganggu 40; margin kontribusi Rp500.000/unit; 25% output hilang dapat dikejar. Instalasi 1 jam + restart 1 jam; pemulihan tambahan Rp250.000. Horizon 24 jam dari perbandingan. Semua jadwal/biaya ini asumsi dummy, bukan kondisi pabrik nyata.', 'source':'synthetic-AC-preshift-v2','normal_units_per_hour':100,'disrupted_units_per_hour':40,
              'selling_price_idr':3500000,'avoidable_variable_cost_idr':3000000,'recoverable_fraction':'0.25',
              'installation_hours':1,'restart_hours':1,'recovery_cost_idr':250000,'horizon_hours':24,
-             'calendar':'24h continuous demo shift','donor':'surplus beyond reserved stock; no additional donor loss assumed'}
+             'calendar':'demo next shift begins requested_at + 12h','shift_start_hours':12,'donor':'surplus beyond reserved stock; no additional donor loss assumed'}
 
 def generation():
     return repo.query('SELECT generation FROM pp.demo_control WHERE singleton')[0]['generation']
@@ -28,7 +28,7 @@ def config():
        {'id':'origin_stock','label':'1 · Stok sendiri','description':'Bearing conveyor merek NTN, lubang 10 mm, diameter luar 30 mm, lebar 9 mm, karet rapat dua sisi. Kode tidak terbaca.','quantity':'1','warehouse_id':'SYN-WH-01'},
        {'id':'transfer_alias','label':'2 · Nama berbeda di gudang 2','description':'Bearing NTN ukuran 10x30x9 mm, karet rapat dua sisi. Kode tidak terbaca.','quantity':'6','warehouse_id':'SYN-WH-01'},
        {'id':'vendor_purchase','label':'3 · Perbandingan vendor','description':'Bearing NTN ukuran 10x30x9 mm, karet rapat dua sisi. Kode tidak terbaca.','quantity':'12','warehouse_id':'SYN-WH-01'},
-       {'id':'clarification','label':'4 · Identitas belum lengkap','description':'Bearing conveyor bunyi, perlu diganti','quantity':'1','warehouse_id':'SYN-WH-01'}]}
+       {'id':'clarification','label':'4 · Demo lengkap: tanya teknisi sampai pilih sumber','description':'Saat inspeksi sebelum shift, bearing conveyor terasa kasar saat diputar. Diameter luar 30 mm. Kode tidak terbaca.','quantity':'6','warehouse_id':'SYN-WH-01'}]}
 
 @router.get('/orders')
 def orders():
@@ -59,7 +59,8 @@ def default_comparison(run):
         stages=[]
         for kind,begin,end in [('procurement',start,start),('dispatch',start,start),('transport',start,eta),('installation',eta,installed),('restart',installed,restored)]:
             stages.append(dict(id=kind,kind=kind,start=begin.isoformat(),end=end.isoformat(),depends_on=[stages[-1]['id']] if stages else [],source=ASSUMPTIONS['source'],assumption_version='v1'))
-        schedule=dict(future_from=start.isoformat(),horizon_end=(start+timedelta(hours=24)).isoformat(),calendar_source=ASSUMPTIONS['calendar'],parallel_assumption_version='v1',stages=stages,scheduled_impacted_windows=[dict(start=start.isoformat(),end=(start+timedelta(hours=24)).isoformat())])
+        shift_start=max(start,datetime.fromisoformat(run['requested_at'])+timedelta(hours=ASSUMPTIONS['shift_start_hours']))
+        schedule=dict(future_from=start.isoformat(),horizon_end=(start+timedelta(hours=24)).isoformat(),calendar_source=ASSUMPTIONS['calendar'],parallel_assumption_version='v1',stages=stages,scheduled_impacted_windows=[dict(start=shift_start.isoformat(),end=(start+timedelta(hours=24)).isoformat())])
         options.append(dict(source_id=source['source_id'],schedule=schedule,costs_nonduplicated=True,
           donor_cost_status=dict(status='not_applicable',source=ASSUMPTIONS['donor'],assumption_version='v1'),
           incremental_disruption_costs=[dict(cost_id='recovery-labor',cost_type='recovery',amount=datum(250000,'IDR'),evidence_ref='demo-additional-labor-v1',description='Tenaga pemulihan tambahan simulasi; di luar biaya variabel yang dapat dihindari')]))
