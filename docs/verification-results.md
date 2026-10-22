@@ -5,7 +5,7 @@ Tanggal pengujian: **23 Oktober 2026 WIB**. [Buka PartPilot](https://partpilot.r
 ## Release dan data aktif
 
 - VPS tetap menjadi host. `current-demo` menunjuk ke `releases/main-20261023-r8`.
-- API dan worker memakai image `partpilot-demo:20261023-main-r8`; bridge WhatsApp tetap memakai image yang sudah ada.
+- API dan worker memakai image `partpilot-demo:20261023-main-r8`; bridge WhatsApp memakai image `partpilot-whatsapp:20261023-reconnect-r1`.
 - Backup database dan konfigurasi dibuat sebelum migrasi, di direktori privat `private/before-evidence-20261022T205803Z` pada root PartPilot VPS. Credential tidak dimasukkan ke dokumen atau repository.
 - Migration020–023 terpasang. API publik telah mengembalikan **10 record bukti**, dengan URL sumber dan SHA-256; seluruhnya `is_local_asset_history=false`.
 - Provider aktif **9router** sesuai revisi pengguna. Adapter Vertex tersedia, tetapi autentikasi dan pengujian live project `hackathon-primestep-16` belum dilakukan.
