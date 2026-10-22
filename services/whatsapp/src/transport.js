@@ -5,6 +5,11 @@ import pino from 'pino';
 import QRCode from 'qrcode';
 import { atomicWrite, failure } from './core.js';
 
+// QR-paired credentials can retain registered=false while me.id identifies the session.
+function hasPairedSession(creds) {
+  return creds.registered === true || (typeof creds.me?.id === 'string' && creds.me.id.length > 0);
+}
+
 export function privateAuth(dir) {
   const path = join(dir, 'auth.json');
   const data = existsSync(path) ? JSON.parse(readFileSync(path, 'utf8'), BufferJSON.reviver) : { creds: initAuthCreds(), keys: {} };
@@ -48,7 +53,7 @@ export class WhatsAppTransport {
   }
   status() { return { connection: this.connection, qr_data_url: this.qr, enabled: this.enabled }; }
   async restore() {
-    if (this.enabled && existsSync(join(this.dir, 'auth.json')) && privateAuth(this.dir).state.creds.registered) await this.connect();
+    if (this.enabled && existsSync(join(this.dir, 'auth.json')) && hasPairedSession(privateAuth(this.dir).state.creds)) await this.connect();
   }
   async connect() {
     if (!this.enabled) throw failure(503, 'whatsapp_disabled');
@@ -98,7 +103,7 @@ export class WhatsAppTransport {
           this.connection = 'logged_out'; auth.reset(); return;
         }
         this.connection = 'disconnected';
-        if (!this.stopped && (auth.state.creds.registered || status === DisconnectReason.restartRequired)) {
+        if (!this.stopped && (hasPairedSession(auth.state.creds) || status === DisconnectReason.restartRequired)) {
           const delay = Math.min(30000, 1000 * (2 ** Math.min(this.attempts++, 5)));
           this.reconnectTimer = setTimeout(() => { this.connect().catch(() => { this.connection = 'error'; }); }, delay);
         }

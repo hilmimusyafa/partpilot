@@ -71,7 +71,7 @@ services:
       - /home/rifqisetiawan/.config/partpilot/gateway-codex.env:/run/partpilot/gateway.env:ro
     logging: *logging
   whatsapp:
-    image: partpilot-whatsapp:20261022
+    image: partpilot-whatsapp:20261023-reconnect-r1
     build:
       context: ../services/whatsapp
     env_file: /home/rifqisetiawan/.config/partpilot/whatsapp.env

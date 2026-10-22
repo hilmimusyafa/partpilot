@@ -10,6 +10,29 @@ function fixture(t) {
   t.after(() => rmSync(dir, { recursive: true, force: true }));
   return dir;
 }
+
+test('paired QR identity restores and reconnects even when registered is false', async t => {
+  const dir = fixture(t);
+  const auth = privateAuth(dir);
+  auth.state.creds.registered = false;
+  auth.state.creds.me = { id: '12025550123:1@s.whatsapp.net', name: 'Test' };
+  await auth.saveCreds();
+  const sockets = [];
+  const transport = new WhatsAppTransport({ enabled: true, dir, onMessage: async () => {}, socketFactory: () => {
+    const socket = { ev: new EventEmitter(), end: () => {} };
+    sockets.push(socket); return socket;
+  } });
+  t.after(() => transport.stop());
+  await transport.restore();
+  assert.equal(sockets.length, 1);
+  sockets[0].ev.emit('connection.update', { connection: 'close', lastDisconnect: { error: { output: { statusCode: 408 } } } });
+  await new Promise(resolve => setTimeout(resolve, 1150));
+  assert.equal(sockets.length, 2);
+  sockets[1].ev.emit('connection.update', { connection: 'close', lastDisconnect: { error: { output: { statusCode: 401 } } } });
+  await new Promise(resolve => setTimeout(resolve, 20));
+  assert.equal(transport.connection, 'logged_out');
+  assert.equal(privateAuth(dir).state.creds.me, undefined);
+});
 test('auth credentials, binary keys and LID maps round trip durably', async t => {
   const dir = fixture(t);
   const auth = privateAuth(dir);
@@ -40,7 +63,9 @@ test('new session waits for explicit connect; reconnect is idempotent and QR cle
   await transport.connect(); await transport.connect();
   assert.equal(sockets.length, 1);
   sockets[0].ev.emit('connection.update', { qr: 'private-test-qr' });
-  await new Promise(resolve => setTimeout(resolve, 30));
+  for (let attempt = 0; attempt < 100 && !transport.status().qr_data_url; attempt++) {
+    await new Promise(resolve => setTimeout(resolve, 20));
+  }
   assert.match(transport.status().qr_data_url, /^data:image\/png;base64,/);
   sockets[0].ev.emit('connection.update', { connection: 'close', lastDisconnect: { error: { output: { statusCode: 401 } } } });
   await new Promise(resolve => setTimeout(resolve, 5));
