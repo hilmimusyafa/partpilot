@@ -13,4 +13,3 @@ write(paths[0],owner)
 write(paths[1],f'DATABASE_URL=postgresql://pp_demo_api:{api}@127.0.0.1:55438/partpilot_demo\nPARTPILOT_DEMO_PASSWORD={login}\nPARTPILOT_PUBLIC_ORIGIN=https://partpilot.rifqisetiawan.my.id\n')
 write(paths[2],f'DATABASE_URL=postgresql://pp_demo_worker:{worker}@127.0.0.1:55438/partpilot_demo\n')
 print('Scoped credentials created; contents not printed.')
-

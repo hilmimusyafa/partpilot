@@ -80,4 +80,3 @@ function DecisionContent() {
   </DemoShell>;
 }
 export default function Decision() { return <Suspense fallback={<p className="p-8">Memuat perbandingan…</p>}><DecisionContent /></Suspense>; }
-
