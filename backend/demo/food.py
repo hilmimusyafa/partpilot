@@ -43,8 +43,8 @@ class Review(Strict):
 def config():
     return dict(context=CONTEXT,symptoms='Conveyor makanan terasa kasar dan bising setelah high-pressure washdown; ada jejak korosi di sekitar flange. Mesin dihentikan untuk inspeksi.',
         observed_part_code='RHP PSF20CR',quantity='2',inventory_source='synthetic:food-conveyor-v1',
-        benchmark=ReportedDowntimeBenchmark().model_dump(),suggested_demo_currency_mapping='16000',
-        currency_mapping_note='16000 IDR per unit dolar publikasi adalah asumsi simulasi, bukan kurs aktual atau identifikasi USD.',
+        benchmark=ReportedDowntimeBenchmark().model_dump(),suggested_demo_currency_mapping='18000',
+        currency_mapping_note='18000 IDR per unit dolar publikasi adalah asumsi simulasi, bukan kurs aktual atau identifikasi USD.',
         limitations=['Tidak memprediksi umur bearing atau waktu kegagalan.','Kasus OEM adalah preseden eksternal; bukan histori aset demo.','Part dan jumlah harus dikonfirmasi teknisi.'])
 
 

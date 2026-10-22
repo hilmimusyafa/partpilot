@@ -31,7 +31,7 @@ function DecisionContent({ sessionId }: { sessionId: string | null }) {
   const [run, setRun] = useState<Run | null>(null);
   const [comparison, setComparison] = useState<Comparison | null>(null);
   const [benchmarkAck, setBenchmarkAck] = useState(false);
-  const [mapping, setMapping] = useState("16000");
+  const [mapping, setMapping] = useState("18000");
   const foodRun = run?.identity.unit_scope === "complete_housed_unit";
   const [selected, setSelected] = useState("");
   const [confirm, setConfirm] = useState<Option | null>(null);

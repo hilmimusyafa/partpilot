@@ -4,13 +4,15 @@ Tanggal pengujian: **23 Oktober 2026 WIB**. [Buka PartPilot](https://partpilot.r
 
 ## Release dan data aktif
 
-- VPS tetap menjadi host. `current-demo` menunjuk ke `releases/main-20261023-r7`.
-- API dan worker memakai image `partpilot-demo:20261023-main-r7`; bridge WhatsApp tetap memakai image yang sudah ada.
+- VPS tetap menjadi host. `current-demo` menunjuk ke `releases/main-20261023-r8`.
+- API dan worker memakai image `partpilot-demo:20261023-main-r8`; bridge WhatsApp tetap memakai image yang sudah ada.
 - Backup database dan konfigurasi dibuat sebelum migrasi, di direktori privat `private/before-evidence-20261022T205803Z` pada root PartPilot VPS. Credential tidak dimasukkan ke dokumen atau repository.
 - Migration020–023 terpasang. API publik telah mengembalikan **10 record bukti**, dengan URL sumber dan SHA-256; seluruhnya `is_local_asset_history=false`.
 - Provider aktif **9router** sesuai revisi pengguna. Adapter Vertex tersedia, tetapi autentikasi dan pengujian live project `hackathon-primestep-16` belum dilakukan.
 
 ## Pengujian otomatis
+
+Pembaruan **main-20261023-r8** menetapkan pemetaan bawaan **18.000 IDR per unit dolar publikasi** pada konfigurasi backend serta tampilan Teknisi dan Meja manajer. Dengan benchmark 3.332 unit/jam, tarif skenario menjadi **Rp59.976.000/jam**. Nilai tetap dapat diubah pengguna dan tetap memerlukan pengakuan asumsi simulasi. Build 13 halaman, TypeScript, lint, serta sembilan tes kalkulator benchmark berhasil. Konfigurasi API publik mengembalikan `18000`; browser Meja keputusan juga menampilkan `18000` tanpa mengetik nilai baru. Hasil historis di bawah tetap memakai pemetaan yang digunakan saat pengujian tersebut, bukan dihitung ulang secara diam-diam.
 
 Pembaruan navigasi **main-20261023-r7**: tab Beranda dihapus; Teknisi mengarah ke halaman utama dan tetap aktif pada `/technician/`. Tombol **Reset** kembali tersedia di kanan atas. Build 13 halaman, TypeScript, dan lint berhasil. Uji browser memverifikasi dialog terbuka, tombol **Reset sesi** terkunci sebelum teks `RESET DEMO` diisi, lalu aktif setelah teks sesuai; **Batal** menutup dialog. Reset database tidak dijalankan dalam uji ini; generation tetap **9** dan 10 bukti OEM tetap tersedia. API aktif sehat. Panduan demo diperbarui dengan langkah reset dan dampaknya.
 
@@ -68,6 +70,6 @@ Run `0aa2980f-e353-4a56-81dc-d7fc6d88ffe6` membandingkan gudang dan vendor simul
 
 ## Batas klaim demo
 
-Kasus OEM merupakan riwayat eksternal terpublikasi. Tidak ada histori CMMS pengguna yang direkayasa. Nama part nyata; aset, stock, harga, ETA, pemeriksaan engineering demo, dan operasi adalah simulasi. Pemetaan 16.000 IDR per unit dolar publikasi bukan kurs nyata. Total biaya merupakan estimasi skenario, bukan kerugian pabrik yang terukur.
+Kasus OEM merupakan riwayat eksternal terpublikasi. Tidak ada histori CMMS pengguna yang direkayasa. Nama part nyata; aset, stock, harga, ETA, pemeriksaan engineering demo, dan operasi adalah simulasi. Pemetaan bawaan terbaru 18.000 IDR per unit dolar publikasi bukan kurs nyata; hasil pengujian sebelum r8 memakai 16.000. Total biaya merupakan estimasi skenario, bukan kerugian pabrik yang terukur.
 
 Keputusan akhir membuat catatan/PO demo; tidak mengirim pesanan pembelian atau memindahkan stok. Prediksi umur bearing, tanggal kegagalan, dan predictive maintenance berbasis sensor belum tersedia.

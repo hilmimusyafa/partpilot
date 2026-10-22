@@ -24,7 +24,7 @@ export default function MaintenanceWorkspace() {
   const [session,setSession]=useState<Session|null>(null), [run,setRun]=useState<Run|null>(null), [comparison,setComparison]=useState<Comparison|null>(null);
   const [kind,setKind]=useState<"exact"|"candidate">("exact"), [reviewed,setReviewed]=useState(false), [reviewer,setReviewer]=useState("");
   const [checks,setChecks]=useState([false,false,false]), [reviewNotes,setReviewNotes]=useState("");
-  const [benchmarkAck,setBenchmarkAck]=useState(false),[mapping,setMapping]=useState("16000");
+  const [benchmarkAck,setBenchmarkAck]=useState(false),[mapping,setMapping]=useState("18000");
   const [chats,setChats]=useState<WhatsAppConversation[]>([]),[selected,setSelected]=useState(""),[confirmOption,setConfirmOption]=useState<Option|null>(null);
   const [po,setPo]=useState<PurchaseOrderResult|null>(null),[busy,setBusy]=useState(""),[error,setError]=useState("");
   useEffect(()=>{ Promise.all([api<DemoConfig>("/demo/config"),api<FoodConfig>("/food-demo/config"),api<{items:Evidence[]}>("/maintenance/evidence")])

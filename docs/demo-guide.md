@@ -1,6 +1,6 @@
 # Panduan demo PartPilot: input, tombol, dan fungsi setiap section
 
-Disesuaikan dengan aplikasi aktif **main-20261023-r7**, 23 Oktober 2026. Mulai dari [halaman utama PartPilot](https://partpilot.rifqisetiawan.my.id/).
+Disesuaikan dengan aplikasi aktif **main-20261023-r8**, 23 Oktober 2026. Mulai dari [halaman utama PartPilot](https://partpilot.rifqisetiawan.my.id/).
 
 **Story satu kalimat:** “Conveyor makanan bising setelah washdown; PartPilot memakai kasus dan katalog OEM untuk membantu inspeksi, menyiapkan WO, lalu memilih sumber part dengan mempertimbangkan waktu pulih dan estimasi kerugian produksi.”
 
@@ -171,17 +171,17 @@ Kartu ini muncul setelah RFQ dikirim. Halaman membaca pembaruan sekitar setiap l
 
 Klik tautan **NSK SS-E-2054** bila ingin menunjukkan sumber benchmark. Kasus tersebut melaporkan **3.332 unit `$` publikasi per jam**. ISO mata uang dan tahun harga tidak dipublikasikan; nilai ini bukan tarif aktual pabrik dan tidak dianggap pasti USD.
 
-1. Isi **Asumsi IDR per satu unit dolar publikasi** dengan:
+1. Kolom **Asumsi IDR per satu unit dolar publikasi** otomatis terisi nilai bawaan berikut; pastikan nilainya sesuai sebelum menghitung. Nilai tetap dapat diubah oleh pengguna:
 
 ```text
-16000
+18000
 ```
 
 2. Centang **Saya memahami penerapan benchmark dan konversi ini adalah asumsi skenario. Total rupiah yang dihasilkan merupakan estimasi simulasi.**
 3. Klik **Hitung / perbarui perbandingan**.
 4. Setiap harga, ETA, hasil negosiasi, atau nilai pemetaan berubah, klik tombol tersebut lagi sebelum memilih sumber.
 
-Pemetaan ini menghasilkan **Rp53.312.000/jam untuk skenario**: 3.332 × 16.000. Manajer dapat mengubah angka pemetaan melalui kolom tersebut. Tarif sumber 3.332 tidak diedit dari UI ini; belum tersedia kolom langsung tarif downtime pabrik dalam Rp/jam.
+Pemetaan ini menghasilkan **Rp59.976.000/jam untuk skenario**: 3.332 × 18.000. Manajer dapat mengubah angka pemetaan melalui kolom tersebut. Tarif sumber 3.332 tidak diedit dari UI ini; belum tersedia kolom langsung tarif downtime pabrik dalam Rp/jam.
 
 Asumsi lain yang diisi sistem: **instalasi 1 jam, restart 1 jam, dan tenaga pemulihan Rp250.000**. Angka-angka ini simulasi. Perbandingan menghitung waktu produksi mendatang yang masih terdampak sampai pulih, bukan membebankan kembali seluruh kerugian masa lalu ke setiap opsi.
 
@@ -271,7 +271,7 @@ SIMULASI pengujian aplikasi. Pemeriksaan mekanis, suhu, pola operasi, dan higien
 6. Klik **Cari sumber kandidat yang disetujui**. Walaupun bernama “Cari sumber”, langkah ini terlebih dahulu membuat/membuka **WO kandidat**.
 7. Tunggu WO **PSF20/LP99** berstatus **`identified`**, lalu klik **Cari gudang sendiri dan gudang lain**.
 8. Periksa SKU pada hasil stok. Sistem memakai **RHP PSF20/LP99** otomatis untuk WO kandidat; tidak perlu mengganti marking awal PSF20CR pada section 1.
-9. Pilih **Ambil penawaran vendor simulasi** untuk jalur cepat, lalu isi pemetaan `16000`, centang pengakuan asumsi, dan klik **Hitung / perbarui perbandingan**.
+9. Pilih **Ambil penawaran vendor simulasi** untuk jalur cepat, lalu isi pemetaan `18000`, centang pengakuan asumsi, dan klik **Hitung / perbarui perbandingan**.
 10. Baca hasil aktual. Untuk memperagakan pembuatan PO, pilih vendor layak dengan **Setujui PO** → **Konfirmasi keputusan** → **Unduh PO (PDF)**. Jika vendor tersebut bukan rekomendasi termurah, jelaskan bahwa pilihan ini untuk menunjukkan keluaran PO, bukan klaim bahwa vendor menang biaya.
 
 Fixture kandidat menyediakan dua unit di Gudang 3. Stok dan penawaran tetap simulasi. Jika memakai WhatsApp untuk kandidat, gunakan pencarian baru yang belum menjalankan simulator dan ganti **hanya kode part** pada form menjadi:
@@ -299,7 +299,7 @@ Alternatifnya, klik tab **Meja manajer**, cari WO yang tepat, lalu klik **Buka s
 | **Meja keputusan** — ringkasan WO | Menampilkan kebutuhan, jumlah, gudang asal, dan status identifikasi. Jika belum valid, gunakan **Selesaikan identifikasi terlebih dahulu**. |
 | Pemeriksaan stok | Untuk WO teridentifikasi, halaman mencoba memeriksa stok otomatis. Gunakan **Coba cek stok lagi** bila pemeriksaan gagal. |
 | **Penawaran vendor melalui WhatsApp** | Jika belum ada penawaran dan ingin mengirim dari sini, klik **Kirim RFQ WhatsApp pengujian**. Ini kirim nyata ke nomor uji. |
-| **Benchmark biaya produksi hilang** | Isi `16000`, centang pengakuan benchmark/konversi simulasi, lalu **Hitung / perbarui perbandingan**. |
+| **Benchmark biaya produksi hilang** | Isi `18000`, centang pengakuan benchmark/konversi simulasi, lalu **Hitung / perbarui perbandingan**. |
 | **Penawaran WhatsApp nyata / Penawaran simulator** | Hasil tiap vendor, stok, harga awal/akhir, dan status negosiasi. “Nyata” merujuk transport balasan WhatsApp, bukan verifikasi harga komersial. |
 | **Percakapan vendor** | Balasan asli, kolom yang terbaca, dan kebutuhan klarifikasi. |
 | **Rekomendasi berdasarkan biaya / Biaya total sampai produksi pulih** | Cara membaca sama dengan bagian 6. Opsi belum lengkap atau kedaluwarsa tidak dapat dikonfirmasi. |

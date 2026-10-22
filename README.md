@@ -10,7 +10,7 @@ PostgreSQL menyimpan **10 record bukti**: satu kasus teknis OEM, dua unit katalo
 
 Nama **RHP PSF20CR** dan **RHP PSF20/LP99** berasal dari katalog asli. Penempatan pada aset demo, stok, vendor simulator, harga, ETA, dan jadwal operasi adalah simulasi. PSF20/LP99 memerlukan review engineering dan higiene. Dimensi yang sama tidak cukup untuk menetapkan substitusi.
 
-Benchmark melaporkan **3.332 `$` publikasi/jam**, tanpa ISO mata uang atau tahun harga. Contoh pemetaan **16.000 IDR per unit dolar publikasi** wajib diakui sebagai asumsi demo, bukan kurs nyata. Hasil rupiah adalah estimasi skenario; tidak disebut kerugian terukur atau margin kontribusi pabrik.
+Benchmark melaporkan **3.332 `$` publikasi/jam**, tanpa ISO mata uang atau tahun harga. Contoh pemetaan **18.000 IDR per unit dolar publikasi** wajib diakui sebagai asumsi demo, bukan kurs nyata. Hasil rupiah adalah estimasi skenario; tidak disebut kerugian terukur atau margin kontribusi pabrik.
 
 ## Bagian Agentic AI
 

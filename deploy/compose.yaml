@@ -22,7 +22,7 @@ services:
       driver: json-file
       options: {max-size: "10m", max-file: "3"}
   api:
-    image: partpilot-demo:20261023-main-r7
+    image: partpilot-demo:20261023-main-r8
     build:
       context: ..
       dockerfile: deploy/Dockerfile
@@ -51,7 +51,7 @@ services:
       retries: 3
     logging: *logging
   worker:
-    image: partpilot-demo:20261023-main-r7
+    image: partpilot-demo:20261023-main-r8
     environment:
       PARTPILOT_GATEWAY_TIMEOUT_SECONDS: "60"
       PARTPILOT_BEARING_RULE_FIRST: "true"
@@ -84,7 +84,7 @@ services:
     volumes: [wa-state:/state]
     logging: *logging
   chat-worker:
-    image: partpilot-demo:20261023-main-r7
+    image: partpilot-demo:20261023-main-r8
     environment:
       PARTPILOT_GATEWAY_TIMEOUT_SECONDS: "60"
       PARTPILOT_MODEL: "ag/gemini-3.8-flash-low"
