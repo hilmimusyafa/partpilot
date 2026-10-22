@@ -1,0 +1,66 @@
+name: partpilot-demo
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: partpilot_demo
+      POSTGRES_USER: partpilot_owner
+      POSTGRES_PASSWORD_FILE: /run/secrets/db-owner-password
+    secrets:
+      - db-owner-password
+    ports:
+      - "127.0.0.1:55438:5432"
+    volumes:
+      - demo-pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U partpilot_owner -d partpilot_demo"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    logging: &logging
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}
+  api:
+    image: partpilot-demo:20261022
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    network_mode: host
+    restart: unless-stopped
+    read_only: true
+    tmpfs: [/tmp]
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    depends_on:
+      db: {condition: service_healthy}
+    volumes:
+      - /home/rifqisetiawan/.config/partpilot/demo-runtime.env:/run/partpilot/runtime.env:ro
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:18080/api/v1/health',timeout=3)"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    logging: *logging
+  worker:
+    image: partpilot-demo:20261022
+    environment:
+      PARTPILOT_GATEWAY_TIMEOUT_SECONDS: "60"
+    command: ["python", "scripts/demo_runtime.py", "worker"]
+    network_mode: host
+    restart: unless-stopped
+    read_only: true
+    tmpfs: [/tmp]
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    depends_on:
+      db: {condition: service_healthy}
+    volumes:
+      - /home/rifqisetiawan/.config/partpilot/demo-worker.env:/run/partpilot/runtime.env:ro
+      - /home/rifqisetiawan/.config/partpilot/gateway-codex.env:/run/partpilot/gateway.env:ro
+    logging: *logging
+volumes:
+  demo-pg:
+secrets:
+  db-owner-password:
+    file: /home/rifqisetiawan/.config/partpilot/demo-db-owner-password

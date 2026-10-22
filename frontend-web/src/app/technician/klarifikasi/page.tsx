@@ -1,3 +1,1 @@
-import TechnicianClarificationPage from "../clarification/page"
-
-export default TechnicianClarificationPage
+export { default } from "@/components/work-order";

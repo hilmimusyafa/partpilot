@@ -1,0 +1,12 @@
+**
+!backend/
+!backend/**
+!scripts/
+!scripts/demo_runtime.py
+!deploy/
+!deploy/requirements.txt
+!frontend-web/
+!frontend-web/out/
+!frontend-web/out/**
+**/__pycache__/**
+**/.env*

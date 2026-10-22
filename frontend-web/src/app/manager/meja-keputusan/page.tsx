@@ -1,3 +1,1 @@
-import ManagerDecisionPage from "../decision/page"
-
-export default ManagerDecisionPage
+export { default } from "@/components/decision";

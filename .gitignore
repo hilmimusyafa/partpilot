@@ -87,3 +87,6 @@ run/
 *.swo
 releases/
 *.tsbuildinfo
+
+!frontend-web/src/lib/
+!frontend-web/src/lib/**

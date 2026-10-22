@@ -1,7 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  output: 'export',
+  trailingSlash: true,
+  images: { unoptimized: true },
   allowedDevOrigins: [
     "heterophoric-meanderingly-clarisa.ngrok-free.dev",
     "*.ngrok-free.dev",
@@ -9,8 +11,7 @@ const nextConfig: NextConfig = {
     "*.ngrok.io",
     "localhost:3000",
   ],
-  cacheComponents: true,
-  partialPrefetching: true,
+  cacheComponents: false,
   turbopack: {
     rules: {
       "*.css": {

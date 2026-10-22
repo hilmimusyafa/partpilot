@@ -1,5 +1,1 @@
-import TechnicianClarificationPage from "../clarification/page"
-
-export default function TechnicianSuccessPage() {
-  return <TechnicianClarificationPage />
-}
+export { default } from "@/components/work-order";
