@@ -1,0 +1,19 @@
+{
+  "name": "partpilot-monorepo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "PartPilot Monorepo - ITB Agentic AI Hackathon 2026",
+  "workspaces": [
+    "frontend-web",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=frontend-web",
+    "dev:web": "npm run dev --workspace=frontend-web",
+    "build": "npm run build --workspace=frontend-web",
+    "build:web": "npm run build --workspace=frontend-web",
+    "start": "npm run start --workspace=frontend-web",
+    "lint": "npm run lint --workspace=frontend-web",
+    "lint:web": "npm run lint --workspace=frontend-web"
+  }
+}

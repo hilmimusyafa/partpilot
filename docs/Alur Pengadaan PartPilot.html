@@ -1,0 +1,211 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Alur Pengadaan PartPilot</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans+Condensed:wght@600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: satu rel vertikal berisi langkah proses; jalur A dan B bercabang di bawah keputusan. Warna menandai cara pengerjaan. */
+:root {
+  --bg: #F1F2EE;
+  --surface: #FFFFFF;
+  --ink: #17201C;
+  --muted: #5A655F;
+  --line: #D3D8D1;
+  --ag: #0A6B84;
+  --ag-bg: #DAEDF2;
+  --au: #444D57;
+  --au-bg: #E4E7EA;
+  --hu: #9A5808;
+  --hu-bg: #F5E6CD;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-head: "IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111614; --surface: #1A211E; --ink: #E6EBE7; --muted: #99A59E; --line: #2C3632;
+    --ag: #66C6DD; --ag-bg: #12323B; --au: #AEB8C2; --au-bg: #262D33; --hu: #E8A857; --hu-bg: #3A2A12;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111614; --surface: #1A211E; --ink: #E6EBE7; --muted: #99A59E; --line: #2C3632;
+  --ag: #66C6DD; --ag-bg: #12323B; --au: #AEB8C2; --au-bg: #262D33; --hu: #E8A857; --hu-bg: #3A2A12;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink);
+  font-family: var(--font-body); font-size: 15px; line-height: 1.55;
+  padding-block: 32px 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 760px; margin: 0 auto; }
+.eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin: 0 0 8px; }
+h1 { font-family: var(--font-head); font-weight: 600; font-size: clamp(28px, 6vw, 40px); line-height: 1.1; margin: 0 0 12px; text-wrap: balance; }
+.lead { color: var(--muted); max-width: 62ch; margin: 0 0 24px; }
+.filters { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 32px; }
+.chip {
+  font: inherit; font-size: 13px; font-weight: 500; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 12px; border-radius: 4px; border: 1px solid var(--line);
+  background: var(--surface); color: var(--ink);
+}
+.chip:focus-visible, .chip:hover { border-color: var(--ink); }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.chip .n { font-family: var(--font-mono); font-size: 12px; opacity: .75; }
+.sym { font-size: 11px; line-height: 1; }
+.flow { list-style: none; margin: 0; padding: 0 0 0 30px; position: relative; }
+.flow::before { content: ""; position: absolute; left: 7px; top: 8px; bottom: 8px; width: 2px; background: var(--line); }
+.phase { margin: 28px 0 10px; font-family: var(--font-mono); font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.phase:first-child { margin-top: 0; }
+.step { position: relative; margin: 0 0 12px; transition: opacity .2s; }
+.step::before {
+  content: ""; position: absolute; left: -30px; top: 18px; width: 16px; height: 16px;
+  border-radius: 50%; background: var(--bg); border: 3px solid var(--dot, var(--line));
+}
+.step.k-ag { --dot: var(--ag); }
+.step.k-au { --dot: var(--au); }
+.step.k-hu { --dot: var(--hu); }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 14px 16px; }
+.step.out .card { border-style: dashed; }
+.top { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 6px; }
+.code { font-family: var(--font-mono); font-size: 12px; color: var(--muted); margin-right: 2px; }
+.tag { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 500; padding: 2px 8px; border-radius: 3px; }
+.tag.ag { background: var(--ag-bg); color: var(--ag); }
+.tag.au { background: var(--au-bg); color: var(--au); }
+.tag.hu { background: var(--hu-bg); color: var(--hu); }
+.scope { font-size: 12px; color: var(--muted); border: 1px solid var(--line); border-radius: 3px; padding: 1px 7px; }
+h3 { font-family: var(--font-head); font-weight: 600; font-size: 18px; line-height: 1.25; margin: 0 0 4px; text-wrap: balance; }
+.who { font-size: 13px; color: var(--muted); margin: 0 0 6px; }
+.who b { font-weight: 500; color: var(--ink); }
+.note { margin: 0; font-size: 14px; max-width: 62ch; }
+.dim { opacity: .25; }
+.lane { margin: 0 0 6px; }
+.lane-head { margin: 22px 0 10px; }
+.lane-head .t { font-family: var(--font-mono); font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--ink); }
+.lane-head .c { font-size: 13px; color: var(--muted); margin: 2px 0 0; }
+.lane-body { margin-left: 14px; padding-left: 16px; border-left: 2px dashed var(--line); }
+.lane-body .step::before { left: -33px; }
+.rules { margin: 40px 0 0; padding-top: 24px; border-top: 1px solid var(--line); }
+.rules h2 { font-family: var(--font-head); font-weight: 600; font-size: 20px; margin: 0 0 12px; }
+.rules ol { margin: 0; padding-left: 20px; display: grid; gap: 8px; max-width: 62ch; }
+.rules li::marker { font-family: var(--font-mono); color: var(--muted); }
+@media (prefers-reduced-motion: reduce) { .step { transition: none; } }
+</style>
+
+<main class="wrap">
+  <p class="eyebrow">Proses pengadaan MRO · work order sampai PO</p>
+  <h1>Dari mesin rusak sampai part terpasang</h1>
+  <p class="lead">Empat belas langkah yang umum dipakai perusahaan, ditandai menurut cara terbaik mengerjakannya. Pilih satu jenis untuk menyorot langkah yang memuatnya.</p>
+
+  <div class="filters" id="filters" role="group" aria-label="Filter jenis pengerjaan"></div>
+
+  <ol class="flow" id="flow"></ol>
+
+  <section class="rules" aria-labelledby="rules-h">
+    <h2 id="rules-h">Cara memilih agentic AI</h2>
+    <ol>
+      <li>Inputnya bahasa bebas atau data terstruktur? Bahasa bebas, seperti nama part dan balasan vendor, perlu AI.</li>
+      <li>Langkah berikutnya selalu sama, atau tergantung hasil? Alur yang bercabang cocok untuk agen. Alur tetap cukup workflow biasa.</li>
+      <li>Apakah salahnya berbahaya? Substitusi part dan uang keluar tetap disetujui manusia, siapa pun yang mengerjakan.</li>
+    </ol>
+  </section>
+</main>
+
+<script>
+var KIND = {
+  ag: { label: "Agentic AI", sym: "◆" },
+  au: { label: "Otomasi aturan", sym: "▪" },
+  hu: { label: "Manusia", sym: "●" }
+};
+var STEPS = {
+  1:  { t: "Kerusakan dilaporkan, work order dibuat", who: "Teknisi / planner", tags: [["au"]], note: "Form atau CMMS memicu alur otomatis. Tidak perlu AI.", scope: "Pemicu" },
+  2:  { t: "Identifikasi part yang dibutuhkan", who: "Teknisi", tags: [["ag"], ["hu", "konfirmasi"]], note: "Teknisi menulis \"laher 6205 yang ada karetnya\". Butuh pemahaman bahasa bebas. Jika ragu, agen bertanya balik." },
+  3:  { t: "Standardisasi nama ke kode baku", who: "Storekeeper", tags: [["ag"]], note: "Nama yang tidak seragam adalah akar masalah. Embedding dan fuzzy match menghasilkan kode baku dengan skor kepercayaan." },
+  4:  { t: "Cek stok semua gudang, reservasi", who: "Gudang", tags: [["au"]], note: "Setelah kode benar, ini query dan reservasi stok. Cukup kode biasa." },
+  5:  { t: "Cari part pengganti (FFF)", who: "Engineering", tags: [["ag"], ["hu", "verifikasi"]], note: "AI mengusulkan dari spesifikasi bentuk, ukuran, dan fungsi. Demi keselamatan, teknisi wajib menyetujui." },
+  6:  { t: "Keputusan transfer atau beli", who: "Planner", tags: [["au"], ["ag"]], note: "Hitungan biaya adalah rumus pasti. Agen mengumpulkan input, memilih skenario, dan menjelaskan alasannya." },
+  7:  { t: "Transfer antargudang", who: "Gudang", tags: [["au"], ["hu", "setuju"]], note: "Transfer order dibuat otomatis, lalu disetujui sesuai batas wewenang." },
+  8:  { t: "Purchase requisition dan persetujuan", who: "Planner / manajer", tags: [["au"], ["hu", "setuju"]], note: "PR diisi dari data terstruktur. Persetujuan lewat workflow batas wewenang." },
+  9:  { t: "Kirim RFQ ke beberapa vendor", who: "Buyer", tags: [["au"]], note: "Template dikirim paralel. Agentic baru dipakai bila isi perlu disesuaikan per vendor." },
+  10: { t: "Tagih vendor, baca dan bandingkan balasan", who: "Buyer", tags: [["ag"]], note: "Balasan bebas seperti \"ready 3 pcs, 450rb, kirim besok\", lampiran PDF, dan pertanyaan balik. RPA berhenti di sini." },
+  11: { t: "Negosiasi harga", who: "Buyer", tags: [["ag"], ["hu", "di luar batas"]], note: "Agen menawar dalam batas harga dan termin. Di luar batas, atau untuk kontrak strategis, kasus naik ke buyer." },
+  12: { t: "Evaluasi dan pilih vendor", who: "Buyer", tags: [["au"], ["hu", "setuju"]], note: "Skor dari harga, lead time, dan riwayat vendor. Perhitungannya tetap, hasilnya ditinjau." },
+  13: { t: "Draf PO, persetujuan, kirim PO", who: "Buyer / manajer", tags: [["au"], ["hu", "setuju"]], note: "Draf dibuat otomatis. PO tidak pernah terkirim tanpa tanda tangan manusia." },
+  14: { t: "Terima barang, pasang, tutup work order", who: "Gudang / finance / teknisi", tags: [["au"], ["hu"]], note: "Penerimaan, three-way match, pembayaran, dan pemasangan sudah ditangani ERP dan teknisi.", scope: "Di luar PartPilot", out: true }
+};
+var LAYOUT = [
+  { phase: "Deteksi dan identifikasi", ids: [1, 2, 3] },
+  { phase: "Ketersediaan", ids: [4, 5] },
+  { phase: "Keputusan", ids: [6] },
+  { lane: "Jalur A · transfer", cond: "Part ada di gudang lain dan transfer lebih murah.", ids: [7] },
+  { lane: "Jalur B · beli", cond: "Stok kosong, atau membeli lebih masuk akal.", ids: [8, 9, 10, 11, 12, 13] },
+  { phase: "Penutupan", ids: [14] }
+];
+var active = null;
+
+function stepHTML(id) {
+  var s = STEPS[id];
+  var primary = s.tags[0][0];
+  var code = "S" + (id < 10 ? "0" : "") + id;
+  var tags = s.tags.map(function (g) {
+    var k = KIND[g[0]];
+    return '<span class="tag ' + g[0] + '"><span class="sym" aria-hidden="true">' + k.sym + "</span>" + k.label + (g[1] ? " · " + g[1] : "") + "</span>";
+  }).join("");
+  var kinds = s.tags.map(function (g) { return g[0]; }).join(" ");
+  return '<li class="step k-' + primary + (s.out ? " out" : "") + '" data-kinds="' + kinds + '"><div class="card">' +
+    '<div class="top"><span class="code">' + code + "</span>" + tags + (s.scope ? '<span class="scope">' + s.scope + "</span>" : "") + "</div>" +
+    "<h3>" + s.t + "</h3>" +
+    '<p class="who">Peran: <b>' + s.who + "</b></p>" +
+    '<p class="note">' + s.note + "</p></div></li>";
+}
+
+function render() {
+  var html = "";
+  LAYOUT.forEach(function (blk) {
+    if (blk.phase) {
+      html += '<li class="phase" aria-hidden="true">' + blk.phase + "</li>";
+      html += blk.ids.map(stepHTML).join("");
+    } else {
+      html += '<li class="lane"><div class="lane-head"><div class="t">' + blk.lane + '</div><p class="c">' + blk.cond + '</p></div>' +
+        '<ol class="lane-body" style="list-style:none;margin-top:0;margin-bottom:0">' + blk.ids.map(stepHTML).join("") + "</ol></li>";
+    }
+  });
+  document.getElementById("flow").innerHTML = html;
+
+  var counts = { ag: 0, au: 0, hu: 0 };
+  Object.keys(STEPS).forEach(function (id) {
+    STEPS[id].tags.forEach(function (g) { counts[g[0]]++; });
+  });
+  var f = '<button class="chip" type="button" data-k="" aria-pressed="true">Semua <span class="n">14</span></button>';
+  ["ag", "au", "hu"].forEach(function (k) {
+    f += '<button class="chip" type="button" data-k="' + k + '" aria-pressed="false"><span class="sym" aria-hidden="true">' + KIND[k].sym + "</span>" + KIND[k].label + ' <span class="n">' + counts[k] + "</span></button>";
+  });
+  document.getElementById("filters").innerHTML = f;
+}
+
+function apply() {
+  var chips = document.querySelectorAll("#filters .chip");
+  chips.forEach(function (c) {
+    var on = (c.getAttribute("data-k") || null) === active;
+    c.setAttribute("aria-pressed", on ? "true" : "false");
+  });
+  document.querySelectorAll(".step").forEach(function (el) {
+    var hit = !active || el.getAttribute("data-kinds").split(" ").indexOf(active) !== -1;
+    el.classList.toggle("dim", !hit);
+  });
+}
+
+render();
+document.getElementById("filters").addEventListener("click", function (e) {
+  var b = e.target.closest(".chip");
+  if (!b) return;
+  var k = b.getAttribute("data-k") || null;
+  active = (k && active === k) ? null : k;
+  apply();
+});
+apply();
+</script>
+
+</body></html>
