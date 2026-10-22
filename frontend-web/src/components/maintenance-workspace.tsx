@@ -24,11 +24,11 @@ export default function MaintenanceWorkspace() {
   const [session,setSession]=useState<Session|null>(null), [run,setRun]=useState<Run|null>(null), [comparison,setComparison]=useState<Comparison|null>(null);
   const [kind,setKind]=useState<"exact"|"candidate">("exact"), [reviewed,setReviewed]=useState(false), [reviewer,setReviewer]=useState("");
   const [checks,setChecks]=useState([false,false,false]), [reviewNotes,setReviewNotes]=useState("");
-  const [benchmarkAck,setBenchmarkAck]=useState(false),[mapping,setMapping]=useState("18000");
+  const [benchmarkAck,setBenchmarkAck]=useState(false);
   const [chats,setChats]=useState<WhatsAppConversation[]>([]),[selected,setSelected]=useState(""),[confirmOption,setConfirmOption]=useState<Option|null>(null);
   const [po,setPo]=useState<PurchaseOrderResult|null>(null),[busy,setBusy]=useState(""),[error,setError]=useState("");
   useEffect(()=>{ Promise.all([api<DemoConfig>("/demo/config"),api<FoodConfig>("/food-demo/config"),api<{items:Evidence[]}>("/maintenance/evidence")])
-    .then(([c,f,e])=>{setConfig(c);setFood(f);setSymptoms(f.symptoms);setEvidence(e.items);setMapping(f.suggested_demo_currency_mapping);})
+    .then(([c,f,e])=>{setConfig(c);setFood(f);setSymptoms(f.symptoms);setEvidence(e.items);})
     .catch(e=>setError(errorMessage(e))); },[]);
   useEffect(()=>{
     if(!session || ["identified","failed","needs_review","no_match","awaiting_clarification"].includes(session.state))return;
@@ -60,7 +60,7 @@ export default function MaintenanceWorkspace() {
   });}
   async function compare(){if(!run)return;await act("Menghitung biaya…",async()=>{
     const r=await api<Run>(`/demo/sourcing-runs/${run.id}`);setRun(r);
-    setComparison(await api<Comparison>(`/food-demo/sourcing-runs/${run.id}/comparison`,{external_applicability_acknowledged:true,idr_per_published_currency_unit:mapping,conversion_assumption_acknowledged:true},`food-cost-${crypto.randomUUID()}`));
+    setComparison(await api<Comparison>(`/food-demo/sourcing-runs/${run.id}/comparison`,{external_applicability_acknowledged:true,conversion_assumption_acknowledged:true},`food-cost-${crypto.randomUUID()}`));
   });}
   async function choose(){if(!comparison||!confirmOption||!run)return;await act("Mencatat keputusan…",async()=>{
     await api(`/demo/comparisons/${comparison.id}/decision`,{expected_version:comparison.version,option_id:confirmOption.option_id,acknowledgment:"demo_only"},`food-decision-${comparison.id}-${confirmOption.option_id}`);
@@ -104,8 +104,8 @@ export default function MaintenanceWorkspace() {
       <div className="flex flex-wrap gap-3"><button className={secondary} disabled={!!busy||run.transport==="whatsapp"||!!selected} onClick={simulate}>Ambil penawaran vendor simulasi</button><button className={secondary} disabled={!!busy||run.transport==="whatsapp"||!!selected} onClick={whatsapp}>Kirim RFQ WhatsApp</button></div>
       <a className="inline-block text-sm text-blue-700 underline" href="/whatsapp/" target="_blank" rel="noreferrer">Status / koneksi WhatsApp (tab baru)</a>
       <p className="text-sm"><a href="https://www.nsk.com/am-en/tools-resources/bearings/aip/success-stories-overview/main-make-up-conveyor/" target="_blank" rel="noreferrer" className="text-blue-700 underline">NSK SS-E-2054</a> melaporkan biaya produksi hilang <strong>$3.332/jam</strong>. Mata uang ISO dan tahun harga tidak dipublikasikan. Ini benchmark eksternal, bukan kerugian terukur pabrik sendiri.</p>
-      <label className="block max-w-sm text-sm">Asumsi IDR per satu unit dolar publikasi<input className={field} value={mapping} onChange={e=>setMapping(e.target.value)}/></label><p className="text-xs text-slate-500">{food?.currency_mapping_note}</p>
-      <label className="flex items-start gap-3 text-sm"><input type="checkbox" checked={benchmarkAck} onChange={e=>setBenchmarkAck(e.target.checked)}/>Saya memahami penerapan benchmark dan konversi ini adalah asumsi skenario. Total rupiah yang dihasilkan merupakan estimasi simulasi.</label>
+      <p className="text-sm">Sistem memakai estimasi produksi hilang Rp59.976.000/jam dengan asumsi tetap.</p>
+      <label className="flex items-start gap-3 text-sm"><input type="checkbox" checked={benchmarkAck} onChange={e=>setBenchmarkAck(e.target.checked)}/>Saya memahami biaya ini merupakan estimasi skenario.</label>
       <button className={primary} disabled={!!busy||!benchmarkAck||!!selected} onClick={compare}>Hitung / perbarui perbandingan</button>
       {run.transport==="whatsapp"&&<p className="text-sm text-slate-500">Balasan dibaca setiap 5 detik. Setelah penawaran atau negosiasi berubah, tekan perbarui perbandingan. WhatsApp tidak mengirim PO otomatis.</p>}
     </section></>}

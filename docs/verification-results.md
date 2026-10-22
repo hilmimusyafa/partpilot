@@ -4,13 +4,15 @@ Tanggal pengujian: **23 Oktober 2026 WIB**. [Buka PartPilot](https://partpilot.r
 
 ## Release dan data aktif
 
-- VPS tetap menjadi host. `current-demo` menunjuk ke `releases/main-20261023-r8`.
-- API dan worker memakai image `partpilot-demo:20261023-main-r8`; bridge WhatsApp memakai image `partpilot-whatsapp:20261023-reconnect-r1`.
+- VPS tetap menjadi host. `current-demo` menunjuk ke `releases/main-20261023-r9`.
+- API dan worker memakai image `partpilot-demo:20261023-main-r9`; bridge WhatsApp memakai image `partpilot-whatsapp:20261023-reconnect-r1`.
 - Backup database dan konfigurasi dibuat sebelum migrasi, di direktori privat `private/before-evidence-20261022T205803Z` pada root PartPilot VPS. Credential tidak dimasukkan ke dokumen atau repository.
 - Migration020–023 terpasang. API publik telah mengembalikan **10 record bukti**, dengan URL sumber dan SHA-256; seluruhnya `is_local_asset_history=false`.
 - Provider aktif **9router** sesuai revisi pengguna. Adapter Vertex tersedia, tetapi autentikasi dan pengujian live project `hackathon-primestep-16` belum dilakukan.
 
 ## Pengujian otomatis
+
+Pembaruan r9 menghapus input kurs di Teknisi dan Meja manajer. Endpoint perbandingan makanan otomatis memakai nilai tetap 18.000, dan menolak override nilai lain. Build, TypeScript, lint, serta 10 tes benchmark/kontrak berhasil. Tarif skenario tetap Rp59.976.000/jam; checkbox hanya mengakui bahwa biaya merupakan estimasi skenario.
 
 Perbaikan reconnect WhatsApp **23 Oktober 2026**: sesi QR di VPS masih memiliki `creds.me.id` walaupun `creds.registered=false`. Bridge lama tidak melakukan restore/retry untuk keadaan tersebut. Pemeriksaan sesi kini menerima identitas QR yang masih ada; logout/bad session tetap mereset kredensial. Tes regresi gagal sebelum patch dan berhasil sesudahnya; **14 tes bridge lulus**. Image bridge aktif `partpilot-whatsapp:20261023-reconnect-r1` berhasil tersambung otomatis setelah restart. RFQ `PP-30aee152` terkirim ke nomor pengujian yang diizinkan; balasan pengguna diproses menjadi **quoted**, delapan field lengkap, tanpa field hilang. Perbandingan baru `6dc0958c-b106-497f-b2e5-006537fde132` memakai pemetaan 18.000 dan mencakup dua opsi lengkap; tidak ada keputusan pembelian yang dibuat oleh pengujian ini.
 

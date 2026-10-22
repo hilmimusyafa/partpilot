@@ -18,7 +18,7 @@ from test_maintenance_agent import CALLS, complete_sequence, final_reply, record
 ROOT = Path(__file__).resolve().parents[2]
 FOOD_CONTEXT = dict(company_id='SYN-COMPANY-01', site_id='FOOD-SITE', production_line_id='FOOD-LINE',
                     station_id='FOOD-STATION', machine_id='FOOD-CONVEYOR', warehouse_id='SYN-WH-01')
-ACK = dict(external_applicability_acknowledged=True, idr_per_published_currency_unit='16000',
+ACK = dict(external_applicability_acknowledged=True, idr_per_published_currency_unit='18000',
            conversion_assumption_acknowledged=True)
 CHECKS = dict(interface_load_speed_checked=True, temperature_duty_checked=True, hygiene_approved=True)
 
@@ -395,7 +395,7 @@ def test_late_vendor_comparison_persists_full_recovery_cost_on_common_horizon(fo
     assert Decimal(economics['effective_scheduled_impacted_hours']) > 97
     assert economics['effective_scheduled_impacted_hours'] == economics['elapsed_restore_hours']
     assert Decimal(economics['estimated_production_loss_unrounded']) == (
-        Decimal(economics['effective_scheduled_impacted_hours']) * Decimal('3332') * Decimal('16000'))
+        Decimal(economics['effective_scheduled_impacted_hours']) * Decimal('3332') * Decimal('18000'))
     schedules = [o['assumptions']['schedule'] for o in ranked['eligible_complete_options']]
     assert {s['horizon_end'] for s in schedules} == {restore_at.isoformat()}
     assert all(s['calendar_source'] == 'synthetic:continuous production; full stop' for s in schedules)

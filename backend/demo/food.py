@@ -111,7 +111,7 @@ def confirmed_work_order(aid:str,body:ConfirmWO,idempotency_key:str=KEY):
 
 class BenchmarkInput(Strict):
     external_applicability_acknowledged: Literal[True]
-    idr_per_published_currency_unit: str
+    idr_per_published_currency_unit: Literal['18000'] = '18000'
     conversion_assumption_acknowledged: Literal[True]
 
 

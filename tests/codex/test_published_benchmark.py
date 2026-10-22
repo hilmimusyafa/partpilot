@@ -3,6 +3,15 @@ import pytest
 from backend.wo.models import EconomicOption
 
 
+def test_food_api_uses_fixed_mapping_and_rejects_override():
+    from backend.demo.food import BenchmarkInput
+    from pydantic import ValidationError
+    ack = dict(external_applicability_acknowledged=True, conversion_assumption_acknowledged=True)
+    assert BenchmarkInput(**ack).idr_per_published_currency_unit == '18000'
+    with pytest.raises(ValidationError):
+        BenchmarkInput(**ack, idr_per_published_currency_unit='16000')
+
+
 def option(hours=8):
     start = datetime(2026, 10, 23, tzinfo=timezone.utc)
     end = start + timedelta(hours=hours)
