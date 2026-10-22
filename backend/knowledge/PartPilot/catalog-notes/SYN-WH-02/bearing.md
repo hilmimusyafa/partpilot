@@ -39,4 +39,4 @@ Pencarian lintas lima gudang yang diminta dan diotorisasi boleh menelusuri satu 
 
 Identitas dan pemetaan per barang harus bersumber dari database/label existing yang eksplisit. Kesamaan dimensi tidak membuktikan identitas, substitusi, kompatibilitas, atau interchangeability teknik. Ketidakpastian scope/nama/kode/label/metadata memerlukan klarifikasi. Nol hasil exact berarti miss pada scope itu; banyak hasil berarti ambigu, bukan izin memilih hasil pertama. Stok nol tidak menghapus identitas record.
 
-Seluruh record, katalog ukuran, stok, lokasi, dan pemetaan per barang tetap di database; tidak disalin ke note ini. Penamaan Gudang 3–5 tetap unknown. Pembaca catatan oleh runtime belum diimplementasikan.
+Seluruh record, katalog ukuran, stok, lokasi, dan pemetaan per barang tetap di database; tidak disalin ke note ini. Gudang 3–5 memakai note fixture demo tersendiri. Runtime memilih note ini melalui allowlist SYN-WH-02/Bearing dan menyimpan hash snapshot sebagai provenance.

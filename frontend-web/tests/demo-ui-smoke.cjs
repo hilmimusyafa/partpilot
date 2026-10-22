@@ -21,11 +21,11 @@ const server = http.createServer((req, res) => {
   fs.createReadStream(file).pipe(res);
 });
 
-const config = { generation: 1, context: {}, assumptions: {}, warehouses: [{ id: 'SYN-WH-01', name: 'Gudang 1' }], scenarios: [{ id: 'main', label: 'Bearing fisik 30 mm', description: 'Bearing conveyor berisik. Diameter luar 30 mm.', quantity: '6', warehouse_id: 'SYN-WH-01' }] };
+const config = { generation: 1, context: {}, assumptions: {}, warehouses: Array.from({ length: 5 }, (_, index) => ({ id: `SYN-WH-0${index + 1}`, name: `Gudang ${index + 1}`, address: `Jl. Contoh ${index + 1}, Kota Demo`, simulated: true })), scenarios: [{ id: 'main', label: 'Bearing fisik 30 mm', description: 'Bearing conveyor berisik. Diameter luar 30 mm.', quantity: '6', warehouse_id: 'SYN-WH-01' }] };
 const quote = { unit_price: '10000', qty_available: '8', shipping_amount: '1000', tax_amount: '6000', delivered_eta: '2099-01-01T08:00:00Z', valid_until: '2099-01-02T08:00:00Z', processing_hours: '1' };
 const option = (id, kind, total) => ({ option_id: id, source_id: id, source_kind: kind, item_code: kind === 'warehouse' ? 'G2-BRG-017' : undefined, quote, valid_until: quote.valid_until, economics: { sourcing_total: '67000', unrecoverable_lost_contribution: String(total - 67000), incremental_disruption_total: '0', future_relevant_option_total: String(total) } });
 // Deliberately interleaved and unsorted so rank assertions exercise presentation order.
-const comparison = { id: 'comparison', version: 1, eligible_complete_options: [option('vendor-expensive', 'vendor', 300000), option('warehouse-best', 'warehouse', 100000), option('vendor-best', 'vendor', 200000)], unrankable_options: [ { option_id: 'warehouse-low', source_id: 'SYN-WH-01', source_kind: 'warehouse', reasons: ['insufficient_stock'] }, { option_id: 'vendor-missing', source_id: 'Vendor belum lengkap', source_kind: 'vendor', reasons: ['no_valid_quote'] } ], unexpired_option_ids: ['vendor-expensive', 'warehouse-best', 'vendor-best'], coverage_complete: false };
+const comparison = { id: 'comparison', version: 1, source_run_version: 1, eligible_complete_options: [option('vendor-expensive', 'vendor', 300000), option('warehouse-best', 'warehouse', 100000), option('vendor-best', 'vendor', 200000)], unrankable_options: [ { option_id: 'warehouse-low', source_id: 'SYN-WH-01', source_kind: 'warehouse', reasons: ['insufficient_stock'] }, { option_id: 'vendor-missing', source_id: 'Vendor belum lengkap', source_kind: 'vendor', reasons: ['no_valid_quote'] } ], unexpired_option_ids: ['vendor-expensive', 'warehouse-best', 'vendor-best'], coverage_complete: false };
 const baseSession = { id: 'session', version: 1, state: 'identified', description: 'Bearing conveyor diameter luar 30 mm', quantity: '6', warehouse_id: 'SYN-WH-01', urgency: 'High', run_id: 'run', comparison_id: 'comparison', facts: [], questions: [] };
 comparison.eligible_complete_options.push({ ...option('vendor-expired', 'vendor', 400000), valid_until: '2020-01-01T00:00:00Z' });
 const scope = { warehouse_id: 'SYN-WH-01', status: 'insufficient', item_code: 'NTN-6200LLU', available_qty: '4', actual_qty: '4', reserved_qty: '0' };
@@ -59,6 +59,7 @@ async function main() {
       let payload;
       if (endpoint === '/demo/config') payload = config;
       else if (endpoint === '/demo/orders') payload = { generation: 1, items: [{ ...baseSession, decision: decision && { option_id: decision } }] };
+      else if (endpoint === '/demo/orders/session') payload = { ...baseSession, decision: decision && { option_id: decision } };
       else if (endpoint === '/demo/sourcing-runs/run') payload = { ...baseRun, decision: decision && { option_id: decision } };
       else if (endpoint === '/demo/comparisons/comparison') payload = comparison;
       else if (endpoint === '/whatsapp/status') payload = { connection: 'disconnected', qr_data_url: null, can_start: false, recipients: [] };
@@ -88,6 +89,10 @@ async function main() {
     await vendors.getByRole('button', { name: 'Setujui PO' }).first().waitFor();
     await page.getByRole('heading', { name: 'Rekomendasi berdasarkan biaya', exact: true }).waitFor();
     assert.match(await warehouses.innerText(), /#1 global/);
+    const stock = page.getByRole('region', { name: 'Stok barang yang sama di setiap gudang' });
+    assert.equal(await stock.getByRole('article').count(), 5);
+    assert.match(await stock.getByRole('article', { name: 'Gudang 1', exact: true }).innerText(), /Kekurangan[\s\S]*2/);
+    assert.match(await stock.innerText(), /Jl. Contoh 5/);
     const vendorText = await vendors.innerText();
     assert(vendorText.indexOf('vendor-best') < vendorText.indexOf('vendor-expensive'));
     assert.match(vendorText, /#2 global[\s\S]*#3 global/);
@@ -118,7 +123,7 @@ async function main() {
     await warehouses.getByRole('button', { name: 'Pilih gudang' }).click();
     const previousPoReads = poReads;
     await page.getByRole('button', { name: 'Konfirmasi pilihan gudang' }).click();
-    await page.getByRole('heading', { name: 'Pilihan gudang tercatat' }).waitFor();
+    await page.getByRole('heading', { name: 'Request mutasi berhasil dicatat' }).waitFor();
     assert.equal(decision, 'warehouse-best');
     assert.equal(poReads, previousPoReads, 'Warehouse choice must not fetch a PO');
     await page.getByRole('button', { name: 'Selesai', exact: true }).click();
@@ -128,7 +133,7 @@ async function main() {
     assert(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), 'Mobile page must not overflow horizontally');
     await page.goto(`${url}/manager/`);
     await page.getByRole('heading', { name: 'Order list', exact: true }).waitFor();
-    await page.getByRole('link', { name: 'Buka perbandingan →' }).waitFor();
+    await page.getByRole('link', { name: 'Buka stok & perbandingan →' }).waitFor();
     await page.setViewportSize({ width: 1440, height: 1000 });
     await page.screenshot({ path: path.join(artifacts, 'manager-desktop.png'), fullPage: true });
     await page.getByRole('textbox', { name: 'Cari work order' }).fill('not present');
@@ -138,6 +143,9 @@ async function main() {
     console.log('PASS: form controls, clarification, global sorted ranks, skipped negotiation, expired quote disabled, vendor approval/PO/retry/reload, warehouse popup, mobile overflow, manager search, no browser errors. All APIs mocked locally.');
     console.log(`Screenshots: ${artifacts}`);
     await context.close();
+    const { testLiveWorkflow, testWoLifecycle } = require('./live-workflow.cjs');
+    await testLiveWorkflow(browser, url, { config, baseSession, baseRun, quote, option }, artifacts);
+    await testWoLifecycle(browser, url, { config, baseSession }, artifacts);
   } finally { await browser.close(); }
 }
 main().catch(error => { console.error(error); process.exitCode = 1; }).finally(() => server.close());

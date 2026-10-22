@@ -8,9 +8,9 @@ Manifest ini hanya indeks pengetahuan penamaan, bukan inventory atau pemetaan pr
 |---|---|---|---|---|
 | Gudang 1 | SYN-WH-01 | Bearing | [Bearing — Gudang 1](SYN-WH-01/bearing.md) | user_provided; grammar NTN, bore, suffix |
 | Gudang 2 | SYN-WH-02 | Bearing | [Bearing — Gudang 2](SYN-WH-02/bearing.md) | user_provided; simulasi grammar LAHER ALUR |
-| Gudang 3 | SYN-WH-03 | Bearing | [Bearing — Gudang 3](SYN-WH-03/bearing.md) | unknown |
-| Gudang 4 | SYN-WH-04 | Bearing | [Bearing — Gudang 4](SYN-WH-04/bearing.md) | unknown |
-| Gudang 5 | SYN-WH-05 | Bearing | [Bearing — Gudang 5](SYN-WH-05/bearing.md) | unknown |
+| Gudang 3 | SYN-WH-03 | Bearing | [Bearing — Gudang 3](SYN-WH-03/bearing.md) | demo_fixture; grammar BEARING KONVEYOR |
+| Gudang 4 | SYN-WH-04 | Bearing | [Bearing — Gudang 4](SYN-WH-04/bearing.md) | demo_fixture; grammar LAHER MOTOR |
+| Gudang 5 | SYN-WH-05 | Bearing | [Bearing — Gudang 5](SYN-WH-05/bearing.md) | demo_fixture; grammar BANTALAN |
 
 ## Kontrak retrieval yang dituju
 
@@ -21,4 +21,4 @@ Manifest ini hanya indeks pengetahuan penamaan, bukan inventory atau pemetaan pr
 5. Nol hasil exact adalah miss pada scope itu; banyak hasil adalah ambigu dan perlu klarifikasi. Stok nol tidak menghapus identitas record.
 6. Record, katalog ukuran, stok, lokasi, dan pemetaan per barang tetap di database. Merek/base/suffix harus memiliki sumber eksplisit dari database atau label existing; jangan mengarang label dari dimensi atau istilah penutup.
 
-Aturan Gudang 1 dan Gudang 2 berstatus user-provided dan manufacturer-unverified; Gudang 2 adalah simulasi. Pembaca catatan oleh runtime belum diimplementasikan. Manifest ini bukan bukti integrasi atau validasi backend.
+Aturan Gudang 1 dan Gudang 2 berstatus user-provided dan manufacturer-unverified; Gudang 2 adalah simulasi. Gudang 3–5 memakai fixture demo sintetis yang diminta user, juga manufacturer-unverified. Runtime membaca satu note scoped melalui allowlist. Nama tampilan/alamat dummy dan seluruh record barang tetap di database; manifest ini tidak membuktikan stok atau validasi pabrikan.

@@ -23,7 +23,7 @@ def generation():
 @router.get('/config')
 def config():
     return {'generation':generation(),'context':CONTEXT,'assumptions':ASSUMPTIONS,
-      'warehouses':[{'id':f'SYN-WH-0{i}','name':f'Gudang {i}'+(' — aturan belum tersedia' if i>2 else '')} for i in range(1,6)],
+      'warehouses':repo.query("SELECT d.warehouse_id AS id,d.name,d.address,d.simulated FROM pp.demo_warehouse_display d JOIN erp.warehouse w ON w.name=d.warehouse_id WHERE w.company='SYN-COMPANY-01' AND NOT w.disabled AND NOT w.is_group ORDER BY d.warehouse_id"),
       'scenarios':[
        {'id':'origin_stock','label':'1 · Stok sendiri','description':'Bearing conveyor merek NTN, lubang 10 mm, diameter luar 30 mm, lebar 9 mm, karet rapat dua sisi. Kode tidak terbaca.','quantity':'1','warehouse_id':'SYN-WH-01'},
        {'id':'transfer_alias','label':'2 · Nama berbeda di gudang 2','description':'Bearing NTN ukuran 10x30x9 mm, karet rapat dua sisi. Kode tidak terbaca.','quantity':'6','warehouse_id':'SYN-WH-01'},
@@ -34,6 +34,14 @@ def config():
 def orders():
     rows=repo.query("SELECT s.id,r.id run_id,c.id comparison_id,d.option_id decision FROM pp.wo_identification_session s LEFT JOIN pp.demo_run r ON r.session_id=s.id LEFT JOIN LATERAL (SELECT id FROM pp.demo_comparison WHERE run_id=r.id ORDER BY created_at DESC LIMIT 1)c ON true LEFT JOIN pp.demo_decision d ON d.run_id=r.id WHERE s.company='SYN-COMPANY-01' ORDER BY s.created_at DESC LIMIT 100")
     return {'generation':generation(),'items':[dict(Session(**get_session(r['id'])).model_dump(mode='json'),run_id=r['run_id'],comparison_id=r['comparison_id'],decision={'option_id':r['decision']} if r['decision'] else None) for r in rows]}
+
+@router.get('/orders/{session_id}')
+def order(session_id:str):
+    # Detail must remain accessible even when absent from the recent-100 list.
+    rows=repo.query("SELECT s.id,r.id run_id,c.id comparison_id,d.option_id decision FROM pp.wo_identification_session s LEFT JOIN pp.demo_run r ON r.session_id=s.id LEFT JOIN LATERAL (SELECT id FROM pp.demo_comparison WHERE run_id=r.id ORDER BY created_at DESC LIMIT 1)c ON true LEFT JOIN pp.demo_decision d ON d.run_id=r.id WHERE s.company='SYN-COMPANY-01' AND s.id=%s",(session_id,))
+    if not rows:raise repo.ProcurementError('session_not_found','WO tidak ditemukan. Demo mungkin sudah direset.',404)
+    r=rows[0]
+    return dict(Session(**get_session(r['id'])).model_dump(mode='json'),run_id=r['run_id'],comparison_id=r['comparison_id'],decision={'option_id':r['decision']} if r['decision'] else None)
 
 class ResetInput(BaseModel):
     model_config=ConfigDict(extra='forbid')

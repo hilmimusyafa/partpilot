@@ -1,7 +1,7 @@
 export type DemoConfig = {
   generation: number;
   context: Record<string, string>;
-  warehouses: { id: string; name: string }[];
+  warehouses: { id: string; name: string; address?: string; simulated?: boolean }[];
   assumptions: Record<string, unknown>;
   scenarios: { id: string; label: string; description: string; quantity: string; warehouse_id: string }[];
 };
@@ -26,7 +26,7 @@ export type Run = {
   identity: { brand: string; base: string; suffix: string };
   availability: { origin: Scope; alternatives: Scope[]; complete: boolean };
   vendors: { vendor_id: string; outcome: string; counteroffers_used: number; quote: Quote | null; initial_quote: Quote | null; eligible: boolean; ineligible_reasons?: string[] }[];
-  decision?: { option_id: string };
+  decision?: { option_id: string; comparison_id?: string };
   negotiation?: { policy: string; round: number; best_option_id: string | null; best_total: string | null; target_total: string | null; basis_at: string | null; vendors: { vendor_id: string; status: "planned" | "skipped"; reason: string | null; target_unit_price: string | null }[] };
 };
 export type PurchaseOrder = { id: string; number: string; supplier?: { id: string; name: string }; quantity?: string; unit_price?: string; shipping_amount?: string; tax_amount?: string; total?: string };
@@ -63,6 +63,7 @@ export function compareOptionCosts(a: Option, b: Option): number {
 }
 export type Comparison = {
   id: string; version: number; eligible_complete_options: Option[]; unrankable_options: Option[];
+  source_run_version: number;
   unexpired_option_ids: string[]; coverage_complete: boolean;
 };
 export type Orders = { generation: number; items: Session[] };
@@ -80,6 +81,11 @@ export type WhatsAppConversation = {
 export type WhatsAppConversations = { conversations: WhatsAppConversation[] };
 
 let activeGeneration: number | undefined;
+export class ApiError extends Error {
+  status: number;
+  code?: string;
+  constructor(message: string, status: number, code?: string) { super(message); this.name = "ApiError"; this.status = status; this.code = code; }
+}
 export async function api<T>(path: string, body?: unknown, key?: string): Promise<T> {
   const response = await fetch(`/api/v1${path}`, {
     method: body === undefined ? "GET" : "POST",
@@ -89,7 +95,7 @@ export async function api<T>(path: string, body?: unknown, key?: string): Promis
     signal: AbortSignal.timeout(60000),
   });
   const data = await response.json().catch(() => null);
-  if (!response.ok) throw new Error(data?.error?.message || `Permintaan gagal (${response.status}). Muat ulang lalu coba lagi.`);
+  if (!response.ok) throw new ApiError(data?.error?.message || `Permintaan gagal (${response.status}). Muat ulang lalu coba lagi.`, response.status, data?.error?.code);
   if (path === "/demo/config" && typeof data?.generation === "number") activeGeneration = data.generation;
   return data as T;
 }
@@ -105,6 +111,8 @@ export function dateTime(value: string | null | undefined): string {
 export function stockQuantity(value: string | null | undefined): string {
   return value == null ? "Belum diketahui" : new Intl.NumberFormat("id-ID", { maximumFractionDigits: 3 }).format(Number(value));
 }
+export function warehouseName(id: string, config?: DemoConfig | null): string { return config?.warehouses.find(warehouse => warehouse.id === id)?.name || id; }
+export function sourceName(option: Pick<Option, "source_kind" | "source_id">, config?: DemoConfig | null): string { return option.source_kind === "warehouse" ? warehouseName(option.source_id, config) : option.source_id; }
 const labels: Record<string, string> = {
   category: "Kategori", quantity: "Jumlah", brand: "Merek", base: "Kode dasar", suffix: "Akhiran kode", item_code: "Kode barang", item_name: "Nama barang",
   dimensions: "Ukuran", seal_type: "Jenis penutup", inner_diameter_mm: "Diameter dalam (mm)", outer_diameter_mm: "Diameter luar (mm)", width_mm: "Lebar (mm)",

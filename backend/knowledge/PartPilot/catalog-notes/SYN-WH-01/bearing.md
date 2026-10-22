@@ -45,4 +45,4 @@ Gunakan note ini hanya untuk company, kategori, dan gudang di atas. Untuk pencar
 
 Identitas dan pemetaan per barang serta merek/base/suffix bersumber dari database atau label existing yang eksplisit. Metadata tidak pasti memerlukan klarifikasi. Nol hasil exact berarti miss; banyak hasil berarti ambigu. Record, stok, lokasi, dan katalog ukuran tetap di database, bukan di note ini.
 
-Pembaca catatan oleh runtime belum diimplementasikan.
+Runtime memilih note ini melalui allowlist SYN-WH-01/Bearing dan menyimpan hash snapshot sebagai provenance.

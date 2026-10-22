@@ -20,7 +20,7 @@ def install_demo(conn, *, allow_test_database=False):
         for path in ['001_schema.sql','009_bearing_lookup.sql','seed/009_bearing_mvp_synth.sql',
                      '010_work_order_identification.sql','011_work_order_production_context.sql']:
             conn.execute((ROOT/'backend/db'/path).read_text(),prepare=False)
-    for path in ['012_procurement_demo.sql','013_demo_console.sql','014_whatsapp.sql','015_purchase_orders.sql','016_negotiation_policy.sql']:
+    for path in ['012_procurement_demo.sql','013_demo_console.sql','014_whatsapp.sql','015_purchase_orders.sql','016_negotiation_policy.sql','018_dashboard_revisions.sql']:
         conn.execute((ROOT/'backend/db'/path).read_text(),prepare=False)
     if conn.execute("SELECT 1 FROM erp.company WHERE name<>'SYN-COMPANY-01'").fetchone():
         raise ValueError('Non-demo company present')
@@ -32,3 +32,6 @@ def install_demo(conn, *, allow_test_database=False):
     conn.execute("INSERT INTO pp.asset_ext(asset,site_warehouse,criticality) VALUES('DEMO-CONVEYOR','SYN-WH-01','D')")
     conn.execute("UPDATE erp.bin SET reserved_qty=6 WHERE item_code='SYN-WH01-NTN-6200LLU' AND warehouse='SYN-WH-01'")
     conn.execute("INSERT INTO pp.demo_control(dataset_tag,reset_enabled,stock_baseline) SELECT 'synthetic-bearing-demo-v1',true,jsonb_agg(to_jsonb(b)) FROM erp.bin b")
+    # Fixture017 checks the enabled demo control and appends three baselines;
+    # historical seed009 and the original eight baseline rows remain intact.
+    conn.execute((ROOT/'backend/db/017_five_warehouse_demo.sql').read_text(),prepare=False)

@@ -276,7 +276,12 @@ def test_unknown_warehouses_and_box_units_are_not_confirmed_absence_or_pieces(db
     run=start(db)
     scopes={s['warehouse_id']:s for s in run['availability']['alternatives']}
     assert scopes['SYN-WH-01']['status']=='identity_insufficient'
-    assert all(scopes[f'SYN-WH-0{n}']['status']=='knowledge_unavailable' for n in (3,4,5))
+    # The five demo notes are now known; this base fixture has no WH03-05 records.
+    assert all(scopes[f'SYN-WH-0{n}']['status']=='not_found' for n in (3,4,5))
+    from backend.wo.availability import evaluate_scope
+    from decimal import Decimal
+    unknown=evaluate_scope('SYN-WH-99',Decimal('6'),{'brand':'NTN','base':'6200','suffix':'LLU'})
+    assert unknown.status=='knowledge_unavailable'
     assert run['availability']['complete'] is False
 
 def test_source_box_unit_cannot_become_a_vendor_order_in_pieces(db):

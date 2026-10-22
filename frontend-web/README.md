@@ -40,3 +40,17 @@ The ranking test uses Node's native TypeScript stripping and checks precision be
 It checks quantity controls, three clarification fields, deliberately unsorted warehouse/vendor costs and global ranks, skipped negotiation, disabled expired quote, manager vendor approval, PO read failure/retry without re-approval, PO persistence after reload, warehouse confirmation without PO, mobile page overflow, manager search and browser runtime errors. Screenshots are written to ignored `.next/ui-smoke/` for desktop and mobile visual inspection.
 
 This is frontend contract verification. Real database totals, PDF contents, authorization and full simulator flows must also be tested with the integrated backend.
+
+## Live workflow and stock clarity (2026-10-22)
+
+The stock section explains matching the same bearing from labels and each warehouse's naming rules. It lists all configured warehouses with their names/addresses, local item names/codes, physical stock, allocated stock, usable stock, requested quantity, and shortfall. Unknown values remain unknown rather than zero. Warehouse names also appear in recommendation/comparison rows. Dummy location data is supplied by the backend config.
+
+Decision pages read the enriched `GET /demo/orders/{session_id}` endpoint directly; they do not depend on the order-list's 100-row window. Unidentified WOs continue polling so queued, clarification and identified states lead to the correct action. Manager list polling retries after transient errors.
+
+For WhatsApp runs, `use-live-comparison.ts` polls run state and conversations independently every five seconds. A changed run version creates/reuses one version-keyed comparison; unchanged versions only re-read the existing comparison for expiry. The authoritative `source_run_version` is required and never replaced with the current run version. Explicit manual refresh creates a fresh comparison request so a user can intentionally recompute time-dependent assumptions.
+
+An open approval modal pins the reviewed comparison. A new run version disables that approval until the manager closes it and reviews fresh data. Approval also rechecks the run immediately before writing; backend conflicts require another review. Automatic fetches cannot replace an open confirmation or a recorded selection, and a decision committed in another tab is reflected by polling. Closed WhatsApp conversations are clearly marked as historical, not current offers.
+
+Successful WO submission shows a confirmation with links to the manager desk or the clarification flow. Saving only a draft has its own wording. A failed submission never shows successful submission; a saved draft remains reachable for recovery. Warehouse selection shows “Request mutasi berhasil dicatat” and explicitly records only a demo request, without real staff notification, stock movement or a PO.
+
+The existing browser smoke command now also runs `tests/live-workflow.cjs`. Its evolving intercepted API reproduces stale live comparisons, a 409 refresh conflict, a conversation-read failure, subsequent pending negotiation, a change while the approval modal is open, a preflight race, another tab's decision, manager polling after a 503, and queued → clarification → identified transitions. Browser time is advanced locally; no live WhatsApp/database reset is involved.

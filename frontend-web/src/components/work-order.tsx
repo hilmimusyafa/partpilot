@@ -20,6 +20,8 @@ function WorkOrderContent() {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState<{ id: string; submitted: boolean } | null>(null);
+  const [failedDraftId, setFailedDraftId] = useState<string | null>(null);
   const submission = useRef<{ body: string; key: string } | null>(null);
   useEffect(() => { let active = true; api<DemoConfig>("/demo/config").then(v => { if (active) setConfig(v); }).catch(e => { if (active) setError(errorMessage(e)); }); return () => { active = false; }; }, []);
   useEffect(() => {
@@ -29,16 +31,16 @@ function WorkOrderContent() {
       try {
         const next = await api<Session>(`/work-orders/${encodeURIComponent(sessionId!)}`);
         if (!active) return;
-        setSession(next);
+        setSession(previous => previous?.id === next.id && previous.version > next.version ? previous : next);
         if (["queued", "processing"].includes(next.state)) timer = setTimeout(poll, 1500);
-      } catch (e) { if (active) setError(errorMessage(e)); }
+      } catch (e) { if (active) { setError(errorMessage(e)); timer = setTimeout(poll, 5000); } }
     }
     void poll();
     return () => { active = false; clearTimeout(timer); };
   }, [sessionId, session?.version]);
 
   async function create(submit: boolean) {
-    if (!config || busy) return;
+    if (!config || busy || success) return;
     if (!description.trim() || !/^\d+$/.test(quantity) || Number(quantity) < 1) { setError("Isi deskripsi dan jumlah bearing minimal 1 buah."); return; }
     setBusy(true); setError("");
     let createdId: string | undefined;
@@ -49,10 +51,9 @@ function WorkOrderContent() {
       const draft = await api<Session>("/work-orders", body, submission.current.key);
       createdId = draft.id; setSession(draft);
       if (submit) setSession(await api<Session>(`/work-orders/${draft.id}/submit`, { expected_version: draft.version }, `submit-${draft.id}-${draft.version}`));
-    } catch (e) { setError(errorMessage(e)); } finally {
-      setBusy(false);
-      if (createdId) router.replace(`/technician/clarification/?session=${encodeURIComponent(createdId)}`);
-    }
+      setFailedDraftId(null); setSuccess({ id: draft.id, submitted: submit });
+    } catch (e) { setError(errorMessage(e)); if (createdId) setFailedDraftId(createdId); }
+    finally { setBusy(false); }
   }
   async function continueSession(action: "submit" | "answers" | "retry") {
     if (!session || busy) return;
@@ -65,11 +66,13 @@ function WorkOrderContent() {
       if (submission.current?.body !== serialized) submission.current = { body: serialized, key: crypto.randomUUID() };
       setSession(await api<Session>(`/work-orders/${session.id}/${action}`, body, submission.current.key));
       setAnswers({});
+      if (action === "submit") setSuccess({ id: session.id, submitted: true });
     } catch (e) { setError(errorMessage(e)); } finally { setBusy(false); }
   }
   const shown = sessionId ? session : null;
   return <DemoShell title="Form work order" config={config} compact>
     <ErrorNotice message={error} />
+    {failedDraftId && <p className="rounded-xl bg-amber-50 p-4 text-sm text-amber-900">Draf sudah tersimpan, tetapi pengajuan untuk identifikasi belum berhasil dikonfirmasi. <Link className="font-semibold underline" href={`/technician/clarification/?session=${encodeURIComponent(failedDraftId)}`}>Buka draf dan periksa status</Link>.</p>}
     {!config && !error && <p role="status">Memuat data demo…</p>}
     {sessionId && !shown && !error && <p role="status">Memuat work order…</p>}
     {!sessionId && config && <>
@@ -106,6 +109,7 @@ function WorkOrderContent() {
       </section>
       <div className="flex gap-3"><Link className={secondary} href="/technician/">Buat WO baru</Link><Link className={secondary} href="/manager/">Lihat semua WO</Link><button className={secondary} onClick={() => window.location.reload()} disabled={busy}>Muat ulang hasil</button></div>
     </>}
+    {success && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-5"><section role="dialog" aria-modal="true" aria-labelledby="wo-success-heading" className="w-full max-w-md space-y-4 rounded-3xl border border-gray-100 bg-white p-6 text-center shadow-2xl sm:p-8"><CheckCircle2 className="mx-auto h-12 w-12 rounded-2xl bg-emerald-100 p-3 text-emerald-700" /><h2 id="wo-success-heading" className="text-xl font-bold text-[#0F274A]">{success.submitted ? "Work order berhasil diajukan" : "Draf work order berhasil disimpan"}</h2><p className="text-sm text-gray-600">{success.submitted ? "Work order sudah diterima untuk proses identifikasi. Jika informasi barang belum cukup, sistem akan meminta klarifikasi sebelum stok dan perbandingan dapat dibuka." : "Draf tersimpan. Lanjutkan draf dan ajukan untuk memulai identifikasi barang."}</p><div className="flex flex-col gap-3"><Link className={primary} href="/manager/">Ke Meja manajer</Link><button autoFocus className={secondary} onClick={() => { const id = success.id; setSuccess(null); router.replace(`/technician/clarification/?session=${encodeURIComponent(id)}`); }}>{success.submitted ? "Lanjutkan klarifikasi" : "Lanjutkan draf"}</button></div></section></div>}
   </DemoShell>;
 }
 export default function WorkOrder() { return <Suspense fallback={<p className="p-8">Memuat work order…</p>}><WorkOrderContent /></Suspense>; }
