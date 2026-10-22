@@ -1,4 +1,4 @@
-"""Dedicated demo HTTP entrypoint. Password and database stay on the server."""
+"""Demo HTTP entrypoint. Public access is an explicit deployment setting."""
 import base64
 import hmac
 import os
@@ -21,16 +21,17 @@ app.include_router(purchase_orders_router)
 async def demo_boundary(request:Request,call_next):
     if request.url.path == '/api/v1/health':
         return await call_next(request)
-    password=os.environ.get('PARTPILOT_DEMO_PASSWORD','')
-    if not password:
-        return JSONResponse({'error':{'code':'demo_disabled','message':'Demo login not configured'}},503)
-    try:
-        scheme,encoded=request.headers.get('authorization','').split(' ',1)
-        user,provided=base64.b64decode(encoded,validate=True).decode().split(':',1)
-        valid=scheme.lower()=='basic' and hmac.compare_digest(user,'demo') and hmac.compare_digest(provided,password)
-    except (ValueError,UnicodeError):valid=False
-    if not valid:
-        return JSONResponse({'error':{'code':'login_required','message':'Login demo diperlukan'}},401,headers={'WWW-Authenticate':'Basic realm="PartPilot demo", charset="UTF-8"','Cache-Control':'no-store'})
+    if os.environ.get('PARTPILOT_DEMO_PUBLIC_ACCESS') != 'true':
+        password=os.environ.get('PARTPILOT_DEMO_PASSWORD','')
+        if not password:
+            return JSONResponse({'error':{'code':'demo_disabled','message':'Demo login not configured'}},503)
+        try:
+            scheme,encoded=request.headers.get('authorization','').split(' ',1)
+            user,provided=base64.b64decode(encoded,validate=True).decode().split(':',1)
+            valid=scheme.lower()=='basic' and hmac.compare_digest(user,'demo') and hmac.compare_digest(provided,password)
+        except (ValueError,UnicodeError):valid=False
+        if not valid:
+            return JSONResponse({'error':{'code':'login_required','message':'Login demo diperlukan'}},401,headers={'WWW-Authenticate':'Basic realm="PartPilot demo", charset="UTF-8"','Cache-Control':'no-store'})
     if request.method not in ('GET','HEAD','OPTIONS'):
         allowed=os.environ.get('PARTPILOT_PUBLIC_ORIGIN','https://partpilot.rifqisetiawan.my.id')
         origin=request.headers.get('origin')

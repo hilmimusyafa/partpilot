@@ -12,11 +12,11 @@ def load(path,allowed):
         if sep and key.strip() in allowed:os.environ[key.strip()]=value.strip().strip('\"\'')
 
 def main():
-    load('/run/partpilot/runtime.env',{'DATABASE_URL','PARTPILOT_DEMO_PASSWORD','PARTPILOT_PUBLIC_ORIGIN'})
+    load('/run/partpilot/runtime.env',{'DATABASE_URL','PARTPILOT_DEMO_PASSWORD','PARTPILOT_PUBLIC_ORIGIN','PARTPILOT_DEMO_PUBLIC_ACCESS'})
     if Path('/run/partpilot/whatsapp.env').exists():
         load('/run/partpilot/whatsapp.env',{'PARTPILOT_WA_INTERNAL_TOKEN'})
     if sys.argv[1]=='api':
-        if not os.environ.get('PARTPILOT_DEMO_PASSWORD'):raise RuntimeError('Missing demo login')
+        if os.environ.get('PARTPILOT_DEMO_PUBLIC_ACCESS') != 'true' and not os.environ.get('PARTPILOT_DEMO_PASSWORD'):raise RuntimeError('Missing demo login')
         import uvicorn
         uvicorn.run('backend.demo.app:app',host='127.0.0.1',port=18080,proxy_headers=True,forwarded_allow_ips='127.0.0.1',access_log=False)
     elif sys.argv[1]=='worker':
