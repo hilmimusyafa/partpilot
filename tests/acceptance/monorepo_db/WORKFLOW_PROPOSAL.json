@@ -1,0 +1,52 @@
+{
+  "proposal_only": true,
+  "release_ready": false,
+  "authoring_task": "t_8dfdf171",
+  "publication_card": "t_72da7891",
+  "candidate_files": [
+    "backend/db/001_schema.sql",
+    "backend/db/009_bearing_lookup.sql",
+    "backend/db/seed/009_bearing_mvp_synth.sql",
+    "backend/docs/db/bearing-mvp.md",
+    "backend/README.md"
+  ],
+  "testfiles": [
+    "tests/acceptance/monorepo_db/test_bundle.py",
+    "tests/acceptance/monorepo_db/test_sql.py"
+  ],
+  "checks": [
+    {
+      "argv": [
+        ".venv/bin/python",
+        "tests/acceptance/monorepo_db/run_checks.py",
+        "collection"
+      ],
+      "timeout_seconds": 60
+    },
+    {
+      "argv": [
+        ".venv/bin/python",
+        "tests/acceptance/monorepo_db/run_checks.py",
+        "static-red"
+      ],
+      "timeout_seconds": 60
+    },
+    {
+      "argv": [
+        ".venv/bin/python",
+        "tests/acceptance/monorepo_db/run_checks.py",
+        "runtime"
+      ],
+      "timeout_seconds": 240
+    }
+  ],
+  "human_review": [
+    "exact seed conflict guards and safe transaction boundaries",
+    "Relay exact publication diff incl knowledge export and optional authorized root README"
+  ],
+  "flow": "Jarvis managed Forge implementation -> fresh Sentinel review -> Relay resumes same card; no counters/history reset",
+  "authoring_modes": [
+    "collection",
+    "static-red"
+  ]
+}

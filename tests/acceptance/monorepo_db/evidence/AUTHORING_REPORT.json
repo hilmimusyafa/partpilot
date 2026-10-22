@@ -1,0 +1,58 @@
+{
+  "scope": "acceptance authoring only",
+  "release_ready": false,
+  "product_verdict": "NOT VERIFIED; candidate missing, expected static-red",
+  "executed_by_sentinel": {
+    "collection": {
+      "exit_code": 0,
+      "exact_nodes": 26,
+      "evidence": "evidence/20261021T183742201834Z"
+    },
+    "static_red": {
+      "exit_code": 1,
+      "failed": 3,
+      "evidence": "evidence/20261021T183742512422Z",
+      "cause": "required backend candidate files absent"
+    },
+    "original_hashes_unchanged": {
+      "db/001_schema.sql": true,
+      "db/009_bearing_lookup.sql": true,
+      "db/seed/009_bearing_mvp_synth.sql": true,
+      "docs/db/bearing-mvp.md": true,
+      "scripts/bearing_isolated_harness.py": true,
+      "tests/acceptance/bearing_mvp/BASELINE.json": true,
+      "tests/acceptance/bearing_mvp/COLLECTION.json": true,
+      "tests/acceptance/bearing_mvp/HANDOFF.md": true,
+      "tests/acceptance/bearing_mvp/REQUIREMENTS.md": true,
+      "tests/acceptance/bearing_mvp/WORKFLOW_PROPOSAL.json": true,
+      "tests/acceptance/bearing_mvp/conftest.py": true,
+      "tests/acceptance/bearing_mvp/pytest.ini": true,
+      "tests/acceptance/bearing_mvp/run_checks.py": true,
+      "tests/acceptance/bearing_mvp/test_exact_lookup.py": true,
+      "tests/acceptance/bearing_mvp/test_query_plan.py": true,
+      "tests/acceptance/bearing_mvp/test_seed_scope.py": true
+    },
+    "original_sql_boundary_static_check": "passed; no SQL executed",
+    "WH02_descriptions_match_recorded_evidence": true
+  },
+  "not_verified": [
+    "runtime dedicated PostgreSQL checks",
+    "new seed conflict semantics",
+    "public bundle safety until candidate exists",
+    "final Relay publication diff"
+  ],
+  "upstream_reported": [
+    "t_58d57ef0 historical PASS",
+    "t_56b741a2 committed main readback; not rerun"
+  ],
+  "missing_candidates": [
+    "backend/db/001_schema.sql",
+    "backend/db/009_bearing_lookup.sql",
+    "backend/db/seed/009_bearing_mvp_synth.sql",
+    "backend/docs/db/bearing-mvp.md",
+    "backend/README.md"
+  ],
+  "manifest_sha256": "d072dc93737e4f922d7aae0fd63e3ff06d3fece6f539656380fbcf3b35b27ff4",
+  "no_product_or_DB_changes": true,
+  "knowledge_subtree_untouched": true
+}

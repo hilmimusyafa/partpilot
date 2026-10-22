@@ -1,0 +1,37 @@
+{
+  "argv": [
+    "/srv/hermes-control/services/partpilot/.venv/bin/python",
+    "-B",
+    "-m",
+    "pytest",
+    "-c",
+    "/srv/hermes-control/services/partpilot/tests/acceptance/api_workflow/pytest.ini",
+    "--confcutdir=/srv/hermes-control/services/partpilot/tests/acceptance/api_workflow",
+    "-p",
+    "no:cacheprovider",
+    "-q",
+    "/srv/hermes-control/services/partpilot/tests/acceptance/api_workflow"
+  ],
+  "exit_code": 1,
+  "testcases": 56,
+  "failures": 0,
+  "errors": 56,
+  "skipped": 0,
+  "exact_count": true,
+  "release_ready": false,
+  "protected_sha256": {
+    "test_intake.py": "4cb27647977d1c5da62b7cc834c2ff8c744c8c10484bf4be1f7b9d0f63612a17",
+    "helpers.py": "7d313a0937f0f70a2edf6b7c68a25bf62c60677cc2c98fb5c9c6cbf888ade85d",
+    "test_boundary.py": "1056184d0b94cb31673a60cb2939403f881f969c22049eae77e0d2499b3081c7",
+    "pytest.ini": "674ff8421831e36183b21b6ef04544760bd16210902ecccfd6db042a216f8367",
+    "COLLECTION.json": "fa900ac56d246d01c5443631e6616772153ada7a289002d75adba3224a67a750",
+    "test_contract.py": "5311227628672bb7c75e15471c3e470a5d60e17faa0e2353d185ec626c3d7c56",
+    "BASELINE.json": "3c68b409c1b8d51d4fa06767870a6a7310a3e0c2f4f4dc8f129e49d49e4acea0",
+    "REQUIREMENTS.md": "bec730b15b4f1a0315a6ee1cf1db3bc3cabf29fb72962a00a483f487c0456b7b",
+    "conftest.py": "0fe4144221e7fc73052527b1c7fbcc38041d286b567a2a5ba2b4aa5c278d5475",
+    "test_workflow.py": "419901c515f692b930503146441077aba9efe46c41a8d1876be1ec6a84478311",
+    "schema_check.py": "d5fd157444b38c9cdc5820feb38630eaba7eafdbeefabdeaadb7010eca068f10",
+    "run_checks.py": "5fb85173ea032eec3a5094dd2682c12263589c14cc79bfdd17b4d5cf6a2c222c",
+    "doubles.py": "f8c2b42072101db77be6396ecc9c5669bce3f4a808f7763ebfa6c58b52636567"
+  }
+}

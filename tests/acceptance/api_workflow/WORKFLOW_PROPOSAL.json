@@ -1,0 +1,159 @@
+{
+  "proposal_version": 1,
+  "status": "NOT_REGISTERED",
+  "authoring_task": "t_9e765a14",
+  "release_ready": false,
+  "scope": "Backend offline API/clarification; no ranking/optimization/decision engine or full-product E2E",
+  "responsible_implementer": "forge",
+  "fresh_reviewer": "sentinel",
+  "registration_owner": "jarvis",
+  "repository": "/srv/hermes-control/services/partpilot",
+  "branch": "backend",
+  "interpreter": "/srv/hermes-control/services/partpilot/.venv/bin/python",
+  "schema_interpreter": "/srv/apps/hermes/hermes-agent/venv/bin/python3",
+  "check_env": {
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "PYTEST_DISABLE_PLUGIN_AUTOLOAD": "1"
+  },
+  "checks": [
+    {
+      "id": "api-workflow-syntax",
+      "argv": [
+        "/srv/hermes-control/services/partpilot/.venv/bin/python",
+        "-B",
+        "/srv/hermes-control/services/partpilot/tests/acceptance/api_workflow/run_checks.py",
+        "syntax"
+      ],
+      "cwd": "/srv/hermes-control/services/partpilot",
+      "expected_exit": 0,
+      "timeout_seconds": 240
+    },
+    {
+      "id": "api-workflow-schema",
+      "argv": [
+        "/srv/hermes-control/services/partpilot/.venv/bin/python",
+        "-B",
+        "/srv/hermes-control/services/partpilot/tests/acceptance/api_workflow/run_checks.py",
+        "schema"
+      ],
+      "cwd": "/srv/hermes-control/services/partpilot",
+      "expected_exit": 0,
+      "timeout_seconds": 240
+    },
+    {
+      "id": "api-workflow-collect",
+      "argv": [
+        "/srv/hermes-control/services/partpilot/.venv/bin/python",
+        "-B",
+        "/srv/hermes-control/services/partpilot/tests/acceptance/api_workflow/run_checks.py",
+        "collect"
+      ],
+      "cwd": "/srv/hermes-control/services/partpilot",
+      "expected_exit": 0,
+      "timeout_seconds": 240
+    },
+    {
+      "id": "api-workflow-baseline",
+      "argv": [
+        "/srv/hermes-control/services/partpilot/.venv/bin/python",
+        "-B",
+        "/srv/hermes-control/services/partpilot/tests/acceptance/api_workflow/run_checks.py",
+        "baseline"
+      ],
+      "cwd": "/srv/hermes-control/services/partpilot",
+      "expected_exit": 0,
+      "timeout_seconds": 240
+    },
+    {
+      "id": "api-workflow-test",
+      "argv": [
+        "/srv/hermes-control/services/partpilot/.venv/bin/python",
+        "-B",
+        "/srv/hermes-control/services/partpilot/tests/acceptance/api_workflow/run_checks.py",
+        "test"
+      ],
+      "cwd": "/srv/hermes-control/services/partpilot",
+      "expected_exit": 0,
+      "timeout_seconds": 240
+    }
+  ],
+  "protected_files": [
+    "tests/acceptance/api_workflow/BASELINE.json",
+    "tests/acceptance/api_workflow/COLLECTION.json",
+    "tests/acceptance/api_workflow/HANDOFF.md",
+    "tests/acceptance/api_workflow/REQUIREMENTS.md",
+    "tests/acceptance/api_workflow/conftest.py",
+    "tests/acceptance/api_workflow/doubles.py",
+    "tests/acceptance/api_workflow/helpers.py",
+    "tests/acceptance/api_workflow/pytest.ini",
+    "tests/acceptance/api_workflow/run_checks.py",
+    "tests/acceptance/api_workflow/schema_check.py",
+    "tests/acceptance/api_workflow/test_boundary.py",
+    "tests/acceptance/api_workflow/test_contract.py",
+    "tests/acceptance/api_workflow/test_intake.py",
+    "tests/acceptance/api_workflow/test_workflow.py",
+    "tests/acceptance/api_workflow/WORKFLOW_PROPOSAL.json"
+  ],
+  "protected_sha256": {
+    "tests/acceptance/api_workflow/BASELINE.json": "3c68b409c1b8d51d4fa06767870a6a7310a3e0c2f4f4dc8f129e49d49e4acea0",
+    "tests/acceptance/api_workflow/COLLECTION.json": "fa900ac56d246d01c5443631e6616772153ada7a289002d75adba3224a67a750",
+    "tests/acceptance/api_workflow/HANDOFF.md": "cf1c009f153083bce617f48d75b18c99528c52cf3fe80016f5d965fbb0006aad",
+    "tests/acceptance/api_workflow/REQUIREMENTS.md": "bec730b15b4f1a0315a6ee1cf1db3bc3cabf29fb72962a00a483f487c0456b7b",
+    "tests/acceptance/api_workflow/conftest.py": "0fe4144221e7fc73052527b1c7fbcc38041d286b567a2a5ba2b4aa5c278d5475",
+    "tests/acceptance/api_workflow/doubles.py": "f8c2b42072101db77be6396ecc9c5669bce3f4a808f7763ebfa6c58b52636567",
+    "tests/acceptance/api_workflow/helpers.py": "7d313a0937f0f70a2edf6b7c68a25bf62c60677cc2c98fb5c9c6cbf888ade85d",
+    "tests/acceptance/api_workflow/pytest.ini": "674ff8421831e36183b21b6ef04544760bd16210902ecccfd6db042a216f8367",
+    "tests/acceptance/api_workflow/run_checks.py": "5fb85173ea032eec3a5094dd2682c12263589c14cc79bfdd17b4d5cf6a2c222c",
+    "tests/acceptance/api_workflow/schema_check.py": "d5fd157444b38c9cdc5820feb38630eaba7eafdbeefabdeaadb7010eca068f10",
+    "tests/acceptance/api_workflow/test_boundary.py": "1056184d0b94cb31673a60cb2939403f881f969c22049eae77e0d2499b3081c7",
+    "tests/acceptance/api_workflow/test_contract.py": "5311227628672bb7c75e15471c3e470a5d60e17faa0e2353d185ec626c3d7c56",
+    "tests/acceptance/api_workflow/test_intake.py": "4cb27647977d1c5da62b7cc834c2ff8c744c8c10484bf4be1f7b9d0f63612a17",
+    "tests/acceptance/api_workflow/test_workflow.py": "419901c515f692b930503146441077aba9efe46c41a8d1876be1ec6a84478311"
+  },
+  "proposed_candidate_files": [
+    {
+      "path": "src/partpilot/__init__.py",
+      "exists_at_authoring": false
+    },
+    {
+      "path": "src/partpilot/app.py",
+      "exists_at_authoring": false
+    },
+    {
+      "path": "src/partpilot/workflow.py",
+      "exists_at_authoring": false
+    },
+    {
+      "path": "src/partpilot/adapters.py",
+      "exists_at_authoring": false
+    }
+  ],
+  "pre_registration_preparation": {
+    "required": true,
+    "owner": "forge",
+    "files": [
+      "src/partpilot/__init__.py",
+      "src/partpilot/app.py",
+      "src/partpilot/workflow.py",
+      "src/partpilot/adapters.py"
+    ],
+    "instruction": "Create only minimal importable placeholders under separate authorization BEFORE Jarvis registration; no product implementation before protected registration. Report actual file/code hashes. Sentinel did not create them."
+  },
+  "adapter_boundary": "Existing approved DB contract only; unsupported live operations failclosed 503; injected memory is explicit offline-only, never restart-durability/security/race proof.",
+  "external_boundary": "UI, negotiation and make-decision/strategy-selection owned by colleague. Selection-related endpoints require interface alignment; explicit stub only, never completion proof.",
+  "non_substitutable_gates": [
+    "Original DB acceptance and t_d0f3de47 unchanged/blocked",
+    "Real PostgreSQL16 persistence/crash/restart/races/roles/audit/fencing",
+    "Backend integrity, approval validity and interface handoff integration",
+    "New independent Sentinel product cycle after Forge"
+  ],
+  "red_evidence": "tests/acceptance/api_workflow/evidence/20261021T143630108879Z/result.json",
+  "observed_red": {
+    "exit_code": 1,
+    "collected": 56,
+    "setup_errors": 56,
+    "skipped": 0,
+    "cause": "MISSING_IMPLEMENTATION partpilot.app"
+  },
+  "not_a_native_contract": true
+}

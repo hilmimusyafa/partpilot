@@ -1,0 +1,8 @@
+packages:
+  - 'frontend-web'
+  - 'apps/*'
+  - 'packages/*'
+allowBuilds:
+  unrs-resolver: true
+minimumReleaseAgeExclude:
+  - lucide-react@1.61.0

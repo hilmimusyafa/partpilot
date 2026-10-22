@@ -1,0 +1,68 @@
+{
+  "proposal_only": true,
+  "release_ready": false,
+  "runtime_activated": false,
+  "same_implementation_card": "t_d0f3de47",
+  "final_card": "t_47a29369",
+  "candidates": [
+    "db/009_bearing_lookup.sql",
+    "db/seed/009_bearing_mvp_synth.sql",
+    "docs/db/bearing-mvp.md"
+  ],
+  "excluded_from_editing": [
+    "scripts/reset_test_db.sh"
+  ],
+  "future_harness": {
+    "candidate_path_proposed": "scripts/bearing_isolated_harness.py",
+    "status": "NOT_IMPLEMENTED_NOT_AUTHORIZED",
+    "plugin_name": "bearing_authorized_harness",
+    "interface": [
+      "native_authorization_verified() -> bool",
+      "rollback_only_connection() -> context manager yielding tuple-row psycopg connection"
+    ],
+    "required_checks": [
+      "target-bound native authorization/hashes",
+      "exclusive endpoint/database/principal before writes",
+      "wrong-target fail before mutation",
+      "001 then 009 then seed; SQL failure abort",
+      "deterministic seed replay semantics (recommend idempotent same state)",
+      "all adversarial test transactions rollback",
+      "no DSN in logs; no admin/create/drop/grant"
+    ]
+  },
+  "mandatory_remaining": [
+    "backend clarification/ambiguity/bound parameters",
+    "Obsidian missing/scope mismatch failclosed",
+    "manual full SQL/schema call-path audit",
+    "legacy DB security/role gates",
+    "Relay public-safe exact diff review"
+  ],
+  "rework_counters": "preserve existing; no reset",
+  "checks": [
+    {
+      "argv": [
+        ".venv/bin/python",
+        "tests/acceptance/bearing_mvp/run_checks.py",
+        "collection"
+      ],
+      "timeout_seconds": 60
+    },
+    {
+      "argv": [
+        ".venv/bin/python",
+        "tests/acceptance/bearing_mvp/run_checks.py",
+        "static-red"
+      ],
+      "timeout_seconds": 60
+    },
+    {
+      "argv": [
+        ".venv/bin/python",
+        "tests/acceptance/bearing_mvp/run_checks.py",
+        "runtime"
+      ],
+      "timeout_seconds": 240,
+      "status": "failclosed; requires official revision before activation"
+    }
+  ]
+}

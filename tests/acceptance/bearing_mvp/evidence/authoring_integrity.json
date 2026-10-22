@@ -1,0 +1,16 @@
+{
+  "originals_checked": 50,
+  "originals_changed": [],
+  "python_sources_compiled": [
+    "conftest.py",
+    "run_checks.py",
+    "test_exact_lookup.py",
+    "test_query_plan.py",
+    "test_seed_scope.py"
+  ],
+  "exact_collection_count": 56,
+  "collection_manifest_sha256": "432f26ac734c9c32399d153c37608e5d480c5db9d657aa10b2caa548809df4ed",
+  "release_ready": false,
+  "sql_test_bodies_executed": 0,
+  "db_connections_attempted": 0
+}

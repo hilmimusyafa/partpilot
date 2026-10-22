@@ -1,0 +1,37 @@
+{
+  "mode": "static-red",
+  "release_ready": false,
+  "provenance": "EXECUTED_BY_SENTINEL when run by Sentinel",
+  "errors": [
+    "candidate missing: db/009_bearing_lookup.sql",
+    "candidate missing: db/seed/009_bearing_mvp_synth.sql",
+    "candidate missing: docs/db/bearing-mvp.md",
+    "runtime/backend/notes/safety gates NOT VERIFIED"
+  ],
+  "collection_argv": [
+    "/srv/hermes-control/services/partpilot/.venv/bin/python",
+    "-B",
+    "-m",
+    "pytest",
+    "-c",
+    "/srv/hermes-control/services/partpilot/tests/acceptance/bearing_mvp/pytest.ini",
+    "--confcutdir",
+    "/srv/hermes-control/services/partpilot/tests/acceptance/bearing_mvp",
+    "-p",
+    "no:cacheprovider",
+    "--collect-only",
+    "-q",
+    "/srv/hermes-control/services/partpilot/tests/acceptance/bearing_mvp/test_seed_scope.py",
+    "/srv/hermes-control/services/partpilot/tests/acceptance/bearing_mvp/test_exact_lookup.py",
+    "/srv/hermes-control/services/partpilot/tests/acceptance/bearing_mvp/test_query_plan.py"
+  ],
+  "collection_exit": 0,
+  "collected": 56,
+  "missing_candidates": [
+    "db/009_bearing_lookup.sql",
+    "db/seed/009_bearing_mvp_synth.sql",
+    "docs/db/bearing-mvp.md"
+  ],
+  "exit_code": 1,
+  "verdict": "NOT_VERIFIED"
+}

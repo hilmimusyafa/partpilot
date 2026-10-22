@@ -1,0 +1,41 @@
+{
+  "upstream_files": {
+    "db/002_staging_synth.sql": "b1d578dc76c1e5097c7deffcbd66323d00cc30c83647fed5781f6bcaefc60be8",
+    "db/003_etl.sql": "8af61a6a89e30e68efac17258da92330122b1021e507d2dc10c6ba6d1c8f5252",
+    "db/007_roles_UNTESTED.sql": "dec1847c503c5a5e170c18d3ebf37bbcaf3e6a3474af06bd4635e15607c769c0",
+    "db/005_seed_synthetic.sql": "fa40f3751e564f85290fde6d8a08a0bcc99647033a10308e263d69da267d9496",
+    "db/006_additions.sql": "b8fe2eca0883af02cb4d4bed9e5f23312fd80b904ab5393a8265d3b2ed4dc131",
+    "db/001_schema.sql": "1abc133b411155d2fcce990dc9a3b55e0d217cfda809a5c0978ba326ff67532a",
+    "db/008_mvp_contracts.sql": "1e73c37e04f34ec6d6be8caf97536b97249842a18e1f951c09d2582c08882221",
+    "db/004_views.sql": "a41c9f8f7b003804939f84f60511ebc41e07973bc9276b2edc740195eb9c9fa6",
+    "db/seed/crosswalk_sites.json": "ba096244c79a8604fddae6dc7c0a01dcb2a833c8ffe46726184f8c58c7ce2923",
+    "db/seed/work_orders.json": "ec3d836a0dada36ed96cf5be6340e10d47cace1d8287c4d6732951eaabdfb3dc",
+    "db/seed/catalog_hgkn.json": "b8516db6463c5fa3ce96ed37b5e1b5d936de657213477e03e145f8852de4b82f",
+    "db/seed/008_seed_synth.sql": "3bc1a5886c15a79c52fe5131d92578e6b8a601e5d417e507220d37b322e58072",
+    "scripts/reset_test_db.sh": "925cac6e23dcc4607e3425925de348722347b6dc629283e38f59d87c2b44d4a5",
+    "scripts/synth/generate_seed.py": "5624b7420aec1fe54a6a35a2114a3247d21808008c050bec59f9b0aaaf6362a8",
+    "scripts/synth/validate_seed.py": "2ea789abc6d19497f50911fcb15f3fdf6a517ee86281f1a2bb0c341ca9d5430b",
+    "tests/test_smoke_db.py": "39e8b548560433d4eeb7021fe5c97d467f1c924ae57570acc6b1660369903d8b",
+    "tests/acceptance/db/test_audit_durability.py": "3e29458adde6f650afb6968427e43de07df3b900a0b8a83ee52c212115b0687d",
+    "tests/acceptance/db/KONTRAK_AMBIGU.md": "83e1a8cecef96ee9fbf44558496e0121fbaeab55f4ab704edee067cf0d4236ed",
+    "tests/acceptance/db/test_approval_invalidation.py": "4c74e4e1ca357c0d56a1a0c9db611cd84c97d9789232d40429687a0d08afbce3",
+    "tests/acceptance/db/PETA_KRITERIA.md": "224aaafcc6bc01d96089b2f9660a8a66f1e672cf52933acac9b97621520d1661",
+    "tests/acceptance/db/test_schema_delta.py": "8ce5b615176f869a0c15179865d6e1d6625c53cfb3f5f7c5763fa71c37463e34",
+    "tests/acceptance/db/test_nomenclature_validation.py": "252d35b1f27fb8d3829cfb2f3b1507084dc2cb830392ce2a877c805caf39c343",
+    "tests/acceptance/db/test_stock_reservation_race.py": "f670d6086583610670e0d47a0205007f29ad15ba18023e0b442109aa1d8a4673",
+    "tests/acceptance/db/test_policy_auto_approve.py": "005c9503ceb2396c47d39d1e258b028fefad442efa1f866cd3e3734f0941ade0",
+    "tests/acceptance/db/test_role_isolation.py": "d5acefc1bdbae876d11809bbdf4d638b39e292224e4d22577dcf3baa84439b3d",
+    "tests/acceptance/db/conftest.py": "f632cfa3f48bc73d78e426e25fd4e8d6df89974118dd801f6d9d0bc7525d0e1b",
+    "tests/acceptance/db/test_decide_approval.py": "db8a09dbff1bf29cc107c7f5ae76a95bfcb52190310f16310442e0265a558e95",
+    "pyproject.toml": "78b3fbee6acc8c61f7c412d5b10939b5b834c9e1c5c2a242b6a30f19cf9d35a1",
+    "README.md": "6b2d637e391f2d1a8f467d9a066e36dce334357ed2228aa2c8d71643bf159d53",
+    ".gitignore": "b0be4d111098299a4ed211f6864893e814b4c04ce1753b85aa2a2db1d75eeda9"
+  },
+  "private_sources": {
+    "/srv/hermes-control/private/partpilot/design/backend-openapi-draft.yaml": "d8948b2e225c355f20a876a1878e2a10d32145b369defac41f95dbf2d89e95ec",
+    "/srv/hermes-control/private/partpilot/design/backend-integration-guide.md": "715d8ac939bbfa3d8b97c5a455761c28c055d9a8b68076c32eb62d7f26fa3063",
+    "/srv/hermes-control/private/partpilot/design/backend-required-acceptance-checks.md": "2fb120f71ecbbce9fe7cbe22b35fa26c9d043cb81812c9ff3ee249f73913e71b",
+    "/srv/hermes-control/private/partpilot/design/state-machine-workflow.md": "e8196091645023c222695aa8c9047326c72d197ee059b164c972debb48a553a7",
+    "/srv/hermes-control/private/partpilot/design/backend-db-decisions.md": "ddb27ef0bf82e09a469969f1f4a9c7746fba71301dd7f2ada7cc6e26bdc6f845"
+  }
+}

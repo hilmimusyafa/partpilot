@@ -1,0 +1,29 @@
+[project]
+name = "partpilot"
+version = "0.1.0"
+description = "Industrial spare parts matching and fulfillment system"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi",
+    "uvicorn",
+    "psycopg[binary]",
+    "pydantic",
+    "httpx",
+    "PyYAML",
+    "reportlab==4.4.9",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+markers = ["live_gateway: makes real model calls; requires explicit gateway-only environment"]

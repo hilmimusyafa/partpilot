@@ -1,0 +1,22 @@
+{
+  "syntax": {
+    "output": "PASS syntax; no skip/xfail directives",
+    "exit_code": 0,
+    "error": null
+  },
+  "schema": {
+    "output": "PASS syntax; no skip/xfail directives\n{\"schema\": \"PASS\", \"operations\": 9, \"validated_examples_including_reused_errors\": 86}",
+    "exit_code": 0,
+    "error": null
+  },
+  "collect": {
+    "output": "PASS syntax; no skip/xfail directives\nPASS exact collection: 56 nodes; /srv/hermes-control/services/partpilot/tests/acceptance/api_workflow/evidence/20261021T143828774873Z",
+    "exit_code": 0,
+    "error": null
+  },
+  "baseline": {
+    "output": "PASS syntax; no skip/xfail directives\nPASS unchanged: 30 upstream files; 5 private sources",
+    "exit_code": 0,
+    "error": null
+  }
+}

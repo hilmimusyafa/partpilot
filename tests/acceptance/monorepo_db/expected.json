@@ -1,0 +1,58 @@
+[
+  {
+    "code": "SYN-WH01-NTN-6200LLU",
+    "name": "NTN 6200LLU",
+    "description": "USER-PROVIDED; MANUFACTURER-UNVERIFIED: 10x30x9 mm; LLU contact both sides",
+    "warehouse": "SYN-WH-01",
+    "qty": 10
+  },
+  {
+    "code": "SYN-WH01-NTN-6801ZZ",
+    "name": "NTN 6801ZZ",
+    "description": "USER-PROVIDED; MANUFACTURER-UNVERIFIED: 12x21x5 mm; ZZ metal shields both sides",
+    "warehouse": "SYN-WH-01",
+    "qty": 10
+  },
+  {
+    "code": "SYN-WH01-NTN-6900LLB",
+    "name": "NTN 6900LLB",
+    "description": "USER-PROVIDED; MANUFACTURER-UNVERIFIED: 10x22x6 mm; LLB noncontact both sides",
+    "warehouse": "SYN-WH-01",
+    "qty": 10
+  },
+  {
+    "code": "SYN-WH01-NTN-6000LLH",
+    "name": "NTN 6000LLH",
+    "description": "USER-PROVIDED; MANUFACTURER-UNVERIFIED: 10x26x8 mm; LLH low torque both sides",
+    "warehouse": "SYN-WH-01",
+    "qty": 10
+  },
+  {
+    "code": "SYN-WH01-NTN-6701LLF",
+    "name": "NTN 6701LLF",
+    "description": "USER-PROVIDED; MANUFACTURER-UNVERIFIED: 12x18x4 mm; LLF noncontact; not equivalent to LLB",
+    "warehouse": "SYN-WH-01",
+    "qty": 10
+  },
+  {
+    "code": "G2-BRG-017",
+    "name": "LAHER ALUR 10X30X9 KARET RAPAT DUA SISI",
+    "description": "SIMULASI; USER-PROVIDED; MANUFACTURER-UNVERIFIED; local stock code (not MPN): G2-BRG-017; label: NTN / 6200 / LLU; brand: NTN; base: 6200; suffix: LLU; location: B-02-03; user quantity: 8 pcs; stock_uom Nos represents individual pieces. User explicitly identifies this label as NTN 6200LLU, matching the provided Gudang1 NTN 6200LLU label; not inferred from name similarity.",
+    "warehouse": "SYN-WH-02",
+    "qty": 8
+  },
+  {
+    "code": "G2-BRG-018",
+    "name": "LAHER ALUR 10X30X9 PLAT DUA SISI",
+    "description": "SIMULASI; USER-PROVIDED; MANUFACTURER-UNVERIFIED; local stock code (not MPN): G2-BRG-018; label: NTN / 6200 / ZZ; brand: NTN; base: 6200; suffix: ZZ; location: B-02-04; user quantity: 14 pcs; stock_uom Nos represents individual pieces.",
+    "warehouse": "SYN-WH-02",
+    "qty": 14
+  },
+  {
+    "code": "G2-BRG-019",
+    "name": "LAHER ALUR 10X30X9 KARET NONKONTAK DUA SISI",
+    "description": "SIMULASI; USER-PROVIDED; MANUFACTURER-UNVERIFIED; local stock code (not MPN): G2-BRG-019; label: NTN / 6200 / LLB; brand: NTN; base: 6200; suffix: LLB; location: B-02-05; user quantity: 9 pcs; stock_uom Nos represents individual pieces.",
+    "warehouse": "SYN-WH-02",
+    "qty": 9
+  }
+]

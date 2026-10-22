@@ -1,0 +1,29 @@
+{
+  "mode": "runtime",
+  "release_ready": false,
+  "provenance": "EXECUTED_BY_SENTINEL when run by Sentinel",
+  "errors": [
+    "RUNTIME_NOT_ACTIVATED: official revision and protected isolated harness required; no DB connection attempted"
+  ],
+  "collection_argv": [
+    "/srv/hermes-control/services/partpilot/.venv/bin/python",
+    "-B",
+    "-m",
+    "pytest",
+    "-c",
+    "/srv/hermes-control/services/partpilot/tests/acceptance/bearing_mvp/pytest.ini",
+    "--confcutdir",
+    "/srv/hermes-control/services/partpilot/tests/acceptance/bearing_mvp",
+    "-p",
+    "no:cacheprovider",
+    "--collect-only",
+    "-q",
+    "/srv/hermes-control/services/partpilot/tests/acceptance/bearing_mvp/test_seed_scope.py",
+    "/srv/hermes-control/services/partpilot/tests/acceptance/bearing_mvp/test_exact_lookup.py",
+    "/srv/hermes-control/services/partpilot/tests/acceptance/bearing_mvp/test_query_plan.py"
+  ],
+  "collection_exit": 0,
+  "collected": 56,
+  "exit_code": 1,
+  "verdict": "NOT_VERIFIED"
+}

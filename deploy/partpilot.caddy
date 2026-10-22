@@ -1,0 +1,9 @@
+partpilot.rifqisetiawan.my.id {
+    encode gzip zstd
+    request_body {
+        max_size 256KB
+    }
+    reverse_proxy 127.0.0.1:18080 {
+        header_up X-Real-IP {remote_host}
+    }
+}
