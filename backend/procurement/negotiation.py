@@ -33,6 +33,11 @@ def plan_locked(run_id):
     from backend.demo.console import default_comparison
     run=get_run(run_id)
     if run['decision'] or run['status']!='sourcing':return view(run_id)
+    food=run['identity'].get('unit_scope')=='complete_housed_unit'
+    approved=None
+    if food:
+        approved=next(iter(repo.query("SELECT request->'production' production FROM pp.demo_comparison WHERE run_id=%s AND request->'production'->>'mode'='reported_downtime_rate' AND request->'production'->>'external_applicability_acknowledged'='true' AND request->'production'->>'conversion_assumption_acknowledged'='true' ORDER BY created_at DESC LIMIT 1",(run_id,))),None)
+        if not approved:return view(run_id)
     # No new comparison/round for already planned vendors. Incomplete vendors
     # can join the same frozen round once their quote becomes complete.
     old=view(run_id)
@@ -43,6 +48,12 @@ def plan_locked(run_id):
     if rows and rows[0]['created_at']>datetime.now(timezone.utc)-timedelta(seconds=55):
         comparison_id=rows[0]['id']
     else:
-        comparison_id=create_comparison(run_id,default_comparison(run),prefix+uuid.uuid4().hex)['id']
+        if food:
+            from backend.demo.food import benchmark_comparison,BenchmarkInput
+            p=approved['production']
+            body=BenchmarkInput(**{k:p[k] for k in BenchmarkInput.model_fields})
+            comparison_id=benchmark_comparison(run_id,body,prefix+uuid.uuid4().hex)['id']
+        else:
+            comparison_id=create_comparison(run_id,default_comparison(run),prefix+uuid.uuid4().hex)['id']
     repo.call('demo_plan_negotiation',comparison_id)
     return view(run_id)

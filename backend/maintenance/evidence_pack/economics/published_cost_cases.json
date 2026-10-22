@@ -1,0 +1,198 @@
+[
+  {
+    "evidence_type": "MANUFACTURER_PUBLISHED_CUSTOMER_CASE",
+    "customer_identity_published": false,
+    "is_partpilot_user_factory_data": false,
+    "publication_date": null,
+    "observation_calendar_year": null,
+    "currency_symbol_as_published": "$",
+    "currency_iso_explicitly_stated": null,
+    "price_year": null,
+    "accounting_definition_of_production_loss": null,
+    "independently_audited_in_this_review": false,
+    "case_id": "NSK-SS-E-2003",
+    "application": "Food production conveyor",
+    "role": "Existing technical-history case; annual economic reference only",
+    "reported": {
+      "period": "per annum; two process lines",
+      "annual_lost_production_cost": "70122",
+      "annual_maintenance_cost": "3506",
+      "annual_bearing_cost": "1966",
+      "annual_total_before": "75594",
+      "annual_total_after": "1137",
+      "annual_difference_reported": "74457",
+      "hourly_production_loss_rate": null,
+      "annual_downtime_hours": null
+    },
+    "suitability": "Cannot derive an hourly rate without hours. Annual values do not establish production rates or contribution margin.",
+    "quality_flags": [
+      "Intro4-6 weeks vs cost-table4-5 weeks",
+      "After-bearing row568*2=1136, shown1137; retain reported value",
+      "Do not divide annual losses by failure count to invent hours"
+    ]
+  },
+  {
+    "evidence_type": "MANUFACTURER_PUBLISHED_CUSTOMER_CASE",
+    "customer_identity_published": false,
+    "is_partpilot_user_factory_data": false,
+    "publication_date": null,
+    "observation_calendar_year": null,
+    "currency_symbol_as_published": "$",
+    "currency_iso_explicitly_stated": null,
+    "price_year": null,
+    "accounting_definition_of_production_loss": null,
+    "independently_audited_in_this_review": false,
+    "case_id": "NSK-SS-E-2054",
+    "application": "Main make-up conveyor",
+    "role": "Selected external economic benchmark",
+    "reported": {
+      "period": "per annum",
+      "production_loss_rate_per_hour": "3332",
+      "production_loss_rate_statistic": "reported_point",
+      "annual_downtime_hours": "8.6",
+      "annual_lost_production_cost": "28655",
+      "maintenance_rate_per_hour": "26",
+      "annual_maintenance_hours": "8.6",
+      "annual_maintenance_cost": "224",
+      "annual_bearing_cost_before": "160",
+      "annual_bearing_cost_after": "106",
+      "annual_total_before": "29039",
+      "annual_total_after": "106",
+      "annual_difference_reported": "28933"
+    },
+    "suitability": "Usable as sourced external production-loss benchmark. Applying to the demonstration is a separate assumption, not an observed factory rate.",
+    "quality_flags": [
+      "8.6h belongs to annual cost table, not each repair",
+      "Approx36 annual bearing replacements in introduction vs26 annual bearing failures in key facts; relationship unexplained",
+      "Exact SKU and asset repair durations not disclosed",
+      "Lost production is not explicitly defined as lost contribution margin",
+      "Annual bearing costs are not current unit prices"
+    ]
+  },
+  {
+    "evidence_type": "MANUFACTURER_PUBLISHED_CUSTOMER_CASE",
+    "customer_identity_published": false,
+    "is_partpilot_user_factory_data": false,
+    "publication_date": null,
+    "observation_calendar_year": null,
+    "currency_symbol_as_published": "$",
+    "currency_iso_explicitly_stated": null,
+    "price_year": null,
+    "accounting_definition_of_production_loss": null,
+    "independently_audited_in_this_review": false,
+    "case_id": "NSK-SS-E-2061",
+    "application": "Snack-food cutter lines",
+    "role": "Secondary only; not default because asset scope and totals conflict",
+    "reported": {
+      "period": "per annum; all three lines",
+      "production_loss_rate_per_minute": "454",
+      "downtime_expression": "2 x 2.5 hours",
+      "annual_lost_production_cost": "136200",
+      "annual_bearing_cost_before": "5878",
+      "annual_maintenance_cost_before": "3350",
+      "annual_total_before": "140137"
+    },
+    "suitability": "The loss row is reproducible; do not multiply by three again or assign to one conveyor.",
+    "quality_flags": [
+      "Displayed before rows sum145428, not140137",
+      "Rate covers all three lines",
+      "Fitting rows do not fully reproduce shown amounts"
+    ]
+  },
+  {
+    "evidence_type": "MANUFACTURER_PUBLISHED_CUSTOMER_CASE",
+    "customer_identity_published": false,
+    "is_partpilot_user_factory_data": false,
+    "publication_date": null,
+    "observation_calendar_year": null,
+    "currency_symbol_as_published": "$",
+    "currency_iso_explicitly_stated": null,
+    "price_year": null,
+    "accounting_definition_of_production_loss": null,
+    "independently_audited_in_this_review": false,
+    "case_id": "NSK-SS-E-2034",
+    "application": "Confectionary head-washing process",
+    "role": "Secondary mechanism reference; not default economic baseline",
+    "reported": {
+      "period": "table labeled per annum; underlying event-period basis unclear",
+      "potential_lost_sales_profit_per_hour": "4159",
+      "repair_hours_per_failure": "4",
+      "maintenance_people": "2",
+      "maintenance_rate_per_person_hour": "35",
+      "annual_lost_production_cost": "99816",
+      "annual_maintenance_cost_before": "1689",
+      "maintenance_cost_after": "281",
+      "annual_total_before": "101626"
+    },
+    "suitability": "Explicit hourly figure and repair duration exist but this is a different washing machine with unresolved period multiplier.",
+    "quality_flags": [
+      "4159*4=16636; reported99816 equals6 times that amount, multiplier not written in loss row",
+      "2*35*4=280, shown281 after",
+      "Do not import four-hour repair duration into PSF conveyor job"
+    ]
+  },
+  {
+    "evidence_type": "MANUFACTURER_PUBLISHED_CUSTOMER_CASE",
+    "customer_identity_published": false,
+    "is_partpilot_user_factory_data": false,
+    "publication_date": null,
+    "observation_calendar_year": null,
+    "currency_symbol_as_published": "$",
+    "currency_iso_explicitly_stated": null,
+    "price_year": null,
+    "accounting_definition_of_production_loss": null,
+    "independently_audited_in_this_review": false,
+    "case_id": "PERMA-BOTTLING-WASHDOWN",
+    "application": "Beverage bottling conveyor; standard two-bolt flange bearings",
+    "role": "Upper-bound sensitivity reference only",
+    "reported": {
+      "downtime_cost_per_hour_upper_bound": "15000",
+      "location": "Southern California",
+      "statistic": "up_to"
+    },
+    "suitability": "A published upper bound with unspecified cost composition; not a point estimate for the PartPilot conveyor.",
+    "quality_flags": [
+      "No original calendar period or detailed cost breakdown",
+      "No repair duration",
+      "Different lubrication intervention and two-bolt flange setup"
+    ]
+  },
+  {
+    "evidence_type": "MANUFACTURER_PUBLISHED_CUSTOMER_CASE",
+    "customer_identity_published": false,
+    "is_partpilot_user_factory_data": false,
+    "publication_date": null,
+    "observation_calendar_year": null,
+    "currency_symbol_as_published": "€",
+    "currency_iso_explicitly_stated": "EUR",
+    "price_year": null,
+    "accounting_definition_of_production_loss": null,
+    "independently_audited_in_this_review": false,
+    "case_id": null,
+    "record_id": "NSK-FOOD-BROCHURE-P15",
+    "application": "Seven-lane UK snack-food washdown conveyor",
+    "role": "Separate annual and repair-duration reference; not selected default",
+    "reported": {
+      "bearings_in_equipment": "84",
+      "replacement_campaigns_per_year": "3",
+      "bearing_replacements_per_year": "252",
+      "labour_hours_per_breakdown": "24",
+      "engineers": "2",
+      "elapsed_work_hours_per_engineer": "12",
+      "production_loss_hours_per_breakdown": "14",
+      "annual_bearing_cost_before": "684",
+      "annual_engineering_cost_before": "3218",
+      "annual_potential_profit_loss": "53627",
+      "annual_total_before": "57529",
+      "annual_total_after": "5326",
+      "hourly_loss_rate_explicit": null
+    },
+    "suitability": "Provides real duration and annual costs, but for the entire seven-lane installation; not time to replace two PSF units.",
+    "quality_flags": [
+      "Case ID and exact installed SKU not stated",
+      "Model examples on page are not established case BOM",
+      "A derived hourly rate needs an explicit assumption that the annual profit loss covers exactly three14-hour stops; not a published hourly figure",
+      "24labour-hours is two engineers*12elapsed hours, not24elapsed downtime"
+    ]
+  }
+]

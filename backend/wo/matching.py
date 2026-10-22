@@ -4,8 +4,9 @@ import re
 import uuid
 from typing import Any, Dict, List, Optional
 from backend.wo.models import Evidence, Fact, Question
+from backend.wo.identity import BRANDS, COMPLETE_LABEL
 
-BRAND_PATTERN = re.compile(r"\b(NTN|NSK|SKF|KOYO|FAG|NACHI)\b", re.I)
+BRAND_PATTERN = BRANDS
 BASE_PATTERN = re.compile(r"\b(6\d{3})(?=\b|LLU|LLB|LLF|LLH|ZZ|2RS|DDU|OPEN)", re.I)
 SUFFIX_PATTERN = re.compile(r"(?<![A-Z])(LLU|ZZ|2RS|LLB|LLF|LLH|DDU|OPEN)\b", re.I)
 UNSUPPORTED_DIMENSION_UNIT = r"(?:(?:cm|m|in|inch|inches|inci|centimet(?:er|re)s?|met(?:er|re)s?)\b|[\"″])"
@@ -62,7 +63,7 @@ def extract_facts_from_text(text: str, source_field: str = "description") -> Lis
         facts.append(Fact(key=key, value=value, source=source_field,
                           evidence=[Evidence(source_field=source_field, raw_substring=raw, normalized_value=value)]))
 
-    for key, pattern in [('brand', BRAND_PATTERN), ('base', BASE_PATTERN), ('suffix', SUFFIX_PATTERN), ('item_code', ITEM_CODE_PATTERN)]:
+    for key, pattern in [('brand', BRAND_PATTERN), ('base', BASE_PATTERN), ('suffix', SUFFIX_PATTERN), ('full_designation', COMPLETE_LABEL), ('item_code', ITEM_CODE_PATTERN)]:
         for match in pattern.finditer(text or ''):
             add(key, match.group(1).upper(), match.group(1))
     for pattern in (DIMENSION_PATTERN, NAMED_DIMENSION_PATTERN):
@@ -117,8 +118,8 @@ def match_candidates(
     if has_unsupported_modifier(input_text) or re.search(r'\b(?:C[1-5]|CN|P[0-9])\b', input_text, re.I):
         return outcome('needs_review', reason='unsupported_designation_modifier')
 
-    keys = ('brand', 'base', 'suffix', 'item_code', 'item_name', 'dimensions', 'seal_type', *PARTIAL_DIMENSION_PATTERNS)
-    values = {k: {f.value.upper() if k in ('brand', 'base', 'suffix') else f.value
+    keys = ('brand', 'base', 'suffix', 'full_designation', 'item_code', 'item_name', 'dimensions', 'seal_type', *PARTIAL_DIMENSION_PATTERNS)
+    values = {k: {f.value.upper() if k in ('brand', 'base', 'suffix', 'full_designation') else f.value
                   for f in facts if f.key == k} for k in keys}
     # Each full triplet must agree with every previously observed component.
     # Expanding only supplied triplets never invents missing measurements.
@@ -133,7 +134,9 @@ def match_candidates(
                                for k, v in values.items() if len(v) > 1]
         return result
     known = {k: next(iter(v)) for k, v in values.items() if v}
-    exact = bool(known.get('item_code') or known.get('item_name') or all(k in known for k in ('brand', 'base', 'suffix')))
+    exact = bool(known.get('item_code') or known.get('item_name') or
+                 all(k in known for k in ('brand', 'base', 'suffix')) or
+                 all(k in known for k in ('brand', 'full_designation')))
     # Noncontact cannot distinguish LLB/LLF, even with one catalog result.
     precise_seal = known.get('seal_type') in ('contact_both_sides', 'metal_shield_both_sides')
     physical = bool(known.get('brand') and known.get('dimensions') and (precise_seal or known.get('suffix')))
@@ -143,7 +146,7 @@ def match_candidates(
         if any(known.get(k) and row.get(k, '') != known[k] for k in ('item_code', 'item_name')):
             continue
         # Unknown identity is a blocker, not evidence a row does not match.
-        if identity and any(k in known and known[k] != identity[k] for k in ('brand', 'base', 'suffix')):
+        if identity and any(k in known and known[k] != identity.get(k) for k in ('brand', 'base', 'suffix', 'full_designation')):
             continue
         if not identity and known.get('brand') and row.get('brand') and row['brand'].upper() != known['brand']:
             continue

@@ -89,7 +89,11 @@ def test_actual_gateway_drives_persisted_wo_and_procurement(db):
     assert current['body']['state']=='identified',current
     assert current['body']['identified_item_code']=='G2-BRG-017'
     assert seen and any(o['status']=='ok' and o['response_sha256'] for o in seen)
-    db.sql((Path(__file__).resolve().parents[2]/'backend/db/012_procurement_demo.sql').read_text())
+    # Exercise the current procurement path, including its persisted negotiation
+    # policy; these migrations run only inside this fixture's owned PG cluster.
+    for migration in ('012_procurement_demo.sql', '013_demo_console.sql',
+                      '014_whatsapp.sql', '015_purchase_orders.sql', '016_negotiation_policy.sql'):
+        db.sql((Path(__file__).resolve().parents[2]/'backend/db'/migration).read_text())
     run=db.api('POST','/api/v1/demo/sourcing-runs',dict(session_id=d['id'],expected_version=current['body']['version']),uuid.uuid4().hex)
     assert run['status']==201,run
     sourcing=db.api('POST',f"/api/v1/demo/sourcing-runs/{run['body']['id']}/advance",{})

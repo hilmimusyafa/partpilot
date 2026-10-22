@@ -9,8 +9,8 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from backend.wo.knowledge import load_scoped_note
 from backend.wo.models import AvailabilityResult, AvailabilityScope, Session
-from backend.wo.repository import get_scoped_candidates, list_warehouses
-from backend.wo.identity import candidate_identity, same_identity
+from backend.wo.repository import get_db_connection, get_scoped_candidates, list_warehouses
+from backend.wo.identity import candidate_identity, same_identity, canonical_identity
 
 
 def match_cross_warehouse_identity(
@@ -19,12 +19,12 @@ def match_cross_warehouse_identity(
     target_note: Dict[str, Any],
 ) -> Tuple[bool, Optional[str]]:
     """Match cross-warehouse identity strictly:
-    - Exact brand + base + suffix evidence required from both.
+    - Exact canonical identity required, including complete unit designation/scope.
     - Local item_code in source does NOT prove MPN in target.
     - Suffixes (LLU, ZZ, LLB, LLF) must match exactly; generic noncontact insufficient.
     - Returns (is_match, reason).
     """
-    if not all(source_identity.get(k) for k in ('brand', 'base', 'suffix')):
+    if canonical_identity(source_identity) is None:
         return False, 'insufficient_source_identity_evidence'
     target = candidate_identity(target_candidate)
     if target is None or not same_identity(source_identity, target):
@@ -40,7 +40,13 @@ def evaluate_scope(
     company_id: str = "SYN-COMPANY-01",
 ) -> AvailabilityScope:
     """Evaluate single warehouse scope for availability."""
-    note_info = load_scoped_note(warehouse_id, category)
+    identity = canonical_identity(source_identity)
+    if identity and identity.get('unit_scope') == 'complete_housed_unit':
+        from backend.wo.food_catalog import load_food_catalog_identity
+        with get_db_connection() as conn:
+            note_info = load_food_catalog_identity(conn, identity, company_id, warehouse_id, category)
+    else:
+        note_info = load_scoped_note(warehouse_id, category)
     if note_info.get("status") == "knowledge_unavailable":
         return AvailabilityScope(
             warehouse_id=warehouse_id,
@@ -49,7 +55,7 @@ def evaluate_scope(
             knowledge_refs=[note_info],
         )
 
-    if not all(source_identity.get(k) for k in ('brand','base','suffix')):
+    if canonical_identity(source_identity) is None:
         return AvailabilityScope(warehouse_id=warehouse_id,status='identity_insufficient',knowledge_refs=[note_info])
 
     candidates, truncated = get_scoped_candidates(company_id, warehouse_id, category)

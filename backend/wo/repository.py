@@ -264,7 +264,7 @@ def list_production_lines(company_id: str, site_id: str, cursor: Optional[str] =
                 if not site_row or site_row[1] != company_id:
                     raise ReferenceNotFoundError(f"Site {site_id} not found in company {company_id}")
 
-                query = "SELECT id, name, company, site_id, production_scope FROM pp.production_line WHERE company = %s AND site_id = %s AND production_scope = 'AC' AND active"
+                query = "SELECT id, name, company, site_id, production_scope FROM pp.production_line WHERE company = %s AND site_id = %s AND production_scope IN ('AC','FOOD') AND active"
                 params: List[Any] = [company_id, site_id]
                 if last_id:
                     query += " AND id > %s"
@@ -454,8 +454,8 @@ def resolve_and_validate_ancestry(
 
         if not (mc_row[4] and mc_row[5] and mc_row[6]):
             raise InvalidProductionContextError("Inactive ancestry node in hierarchy")
-        if mc_row[3] != "AC":
-            raise InvalidProductionContextError(f"Production line scope is '{mc_row[3]}', required 'AC'")
+        if mc_row[3] not in ("AC", "FOOD"):
+            raise InvalidProductionContextError(f"Production line scope is '{mc_row[3]}', required 'AC' or 'FOOD'")
 
         st_id, pl_id, si_id = mc_row[0], mc_row[1], mc_row[2]
         if station_id is not None and station_id != st_id:
@@ -495,8 +495,8 @@ def resolve_and_validate_ancestry(
             raise ReferenceNotFoundError(f"Station '{station_id}' not found in company '{company_id}'")
         if not (ps_row[3] and ps_row[6] and ps_row[7]):
             raise InvalidProductionContextError("Inactive station or ancestor node")
-        if ps_row[5] != "AC":
-            raise InvalidProductionContextError(f"Production line scope is '{ps_row[5]}', required 'AC'")
+        if ps_row[5] not in ("AC", "FOOD"):
+            raise InvalidProductionContextError(f"Production line scope is '{ps_row[5]}', required 'AC' or 'FOOD'")
 
         pl_id, si_id = ps_row[2], ps_row[4]
         if production_line_id is not None and production_line_id != pl_id:
@@ -522,8 +522,8 @@ def resolve_and_validate_ancestry(
             raise ReferenceNotFoundError(f"Production line '{production_line_id}' not found in company '{company_id}'")
         if not (pl_row[4] and pl_row[5]):
             raise InvalidProductionContextError("Inactive line or site node")
-        if pl_row[3] != "AC":
-            raise InvalidProductionContextError(f"Production line scope is '{pl_row[3]}', required 'AC'")
+        if pl_row[3] not in ("AC", "FOOD"):
+            raise InvalidProductionContextError(f"Production line scope is '{pl_row[3]}', required 'AC' or 'FOOD'")
 
         si_id = pl_row[2]
         if site_id is not None and site_id != si_id:

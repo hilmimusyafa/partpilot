@@ -10,6 +10,7 @@ dependencies = [
     "psycopg[binary]",
     "pydantic",
     "httpx",
+    "google-auth>=2.40,<3",
     "PyYAML",
     "reportlab==4.4.9",
 ]

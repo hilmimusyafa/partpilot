@@ -4,6 +4,7 @@ import re
 from datetime import datetime,timedelta,timezone
 from decimal import Decimal
 from backend.wo.gateway import call_gateway_completion,runtime_timeout
+from backend.wo.identity import candidate_identity
 
 TZ=timezone(timedelta(hours=7))
 FIELDS=('identity','qty_available','unit_price','shipping_amount','tax_amount','processing_hours','delivered_eta','valid_until')
@@ -30,8 +31,17 @@ def terminal_outcome(text):
                  if re.fullmatch(prefix+pattern+suffix,s)),None)
 
 
+def form_text(text):
+    """Virtual lines for an inline canonical form; original evidence stays untouched."""
+    headings = '(?:' + '|'.join(re.escape(label) for label in LABELS.values()) + r')[ \t]*:'
+    if not re.match(headings, text, re.I):
+        return text  # Never turn a narrative prefix into a structured form.
+    return re.sub(r'[ \t]+(?=' + headings + ')', '\n', text, flags=re.I)
+
+
 def form_excerpts(text):
     """Use the same exact template headings and validation as model evidence."""
+    text=form_text(text)
     fields={};supplied=[]
     for field,label in LABELS.items():
         lines=list(re.finditer(r'^'+re.escape(label)+r'[ \t]*:[ \t]*([^\r\n]*)\r?$',text,re.I|re.M))
@@ -62,14 +72,17 @@ def date_value(raw,at,field):
         if named:
             return datetime(int(named[3]),MONTHS[named[2]],int(named[1]),
                             int(named[4]),int(named[5]),tzinfo=TZ).isoformat()
-        iso=re.search(r'\d{4}-\d{2}-\d{2}[tT ]\d{2}:\d{2}(?::\d{2})?(?:[+-]\d{2}:\d{2}|[zZ])?',raw)
+        # Consume the complete quoted expression: selecting a timestamp from
+        # negation, a range, or alternatives would invent a confirmed date.
+        iso=re.fullmatch(r'(\d{4}-\d{2}-\d{2}[t ]\d{2}:\d{2}(?::\d{2})?)([+-]\d{2}:\d{2}|z)?(?:\s+(wib))?',s)
         if iso:
-            value=datetime.fromisoformat(iso[0].replace('Z','+00:00'))
+            if iso[2] and iso[3]:return None  # Conflicting timezone notation.
+            value=datetime.fromisoformat(iso[1]+(iso[2] or '').replace('z','+00:00'))
             return (value.replace(tzinfo=TZ) if value.tzinfo is None else value).isoformat()
-        clock=re.search(r'(?:jam|pukul)\s*(\d{1,2})[.:](\d{2})',s)
-        if clock and ('besok' in s or 'hari ini' in s):
-            day=local+timedelta(days=1 if 'besok' in s else 0)
-            return day.replace(hour=int(clock[1]),minute=int(clock[2]),second=0,microsecond=0).isoformat()
+        clock=re.fullmatch(r'(besok|hari ini)\s+(?:jam|pukul)\s*(\d{1,2})[.:](\d{2})(?:\s*wib)?',s)
+        if clock:
+            day=local+timedelta(days=1 if clock[1]=='besok' else 0)
+            return day.replace(hour=int(clock[2]),minute=int(clock[3]),second=0,microsecond=0).isoformat()
         duration=re.fullmatch(r'(?:dalam\s+|sekitar\s+)?(\d+(?:[.,]\d+)?)\s*(jam|hari)(?:\s+lagi)?',s)
         if duration:
             hours=float(duration[1].replace(',','.'))*(24 if duration[2]=='hari' else 1)
@@ -82,16 +95,21 @@ def validate_extraction(data,text,at):
     if not isinstance(data,dict):return {'fields':{},'evidence':{},'outcome':None}
     source=data.get('fields',{})
     if not isinstance(source,dict):source={}
+    canonical_text=form_text(text)
     for field,item in source.items():
         if field not in FIELDS or not isinstance(item,dict):continue
         raw=item.get('raw')
         if not isinstance(raw,str) or not raw or len(raw)>200 or raw not in text:continue
         # A copyable form carries units in its heading. Ground the model's
         # value-only excerpt in that exact field's single complete source line.
-        form_lines=list(re.finditer(r'^'+re.escape(LABELS[field])+r'[ \t]*:[ \t]*([^\r\n]+)\r?$',text,re.I|re.M))
+        form_lines=list(re.finditer(r'^'+re.escape(LABELS[field])+r'[ \t]*:[ \t]*([^\r\n]*)\r?$',canonical_text,re.I|re.M))
         if len(form_lines)>1:continue
-        if len(form_lines)==1 and raw.strip()==form_lines[0][1].strip() and field not in ('identity','delivered_eta','valid_until'):
-            raw=form_lines[0][0]
+        if len(form_lines)==1:
+            # A present heading binds this field to its entire value, not a
+            # cropped number or another field's value. Empty duplicates count.
+            if raw.strip() not in (form_lines[0][1].strip(),form_lines[0][0].strip()):continue
+            if field not in ('identity','delivered_eta','valid_until'):
+                raw=form_lines[0][0]
         # A digit occurring inside an unrelated price is not evidence for another field.
         if not re.search(r'(?<![\w.,-])'+re.escape(raw)+r'(?!\w|[.,]\d)',text):continue
         if field not in ('identity','delivered_eta','valid_until') and any(re.search(r'[-−–—]\s*$',text[max(0,m.start()-5):m.start()]) for m in re.finditer(re.escape(raw),text)):continue
@@ -104,8 +122,11 @@ def validate_extraction(data,text,at):
             if any(re.match(r'\s*(?:%|persen\b|per\s*(?:pcs|buah|unit|kg)\b|/(?:pcs|buah|unit|kg)\b)',tail,re.I) for tail in tails):continue
         value=None
         if field=='identity':
-            m=re.fullmatch(r'\s*(NTN|NSK|SKF|KOYO|FAG|NACHI)\s+(6\d{3})\s*(LLU|LLB|LLF|LLH|ZZ|2RS|DDU|OPEN)\s*',raw,re.I)
-            if m:value=dict(zip(('brand','base','suffix'),(v.upper() for v in m.groups())))
+            # Entire excerpt must be a label, not a sentence offering alternatives.
+            if re.fullmatch(r'\s*(?:(?:NTN|NSK|SKF|KOYO|FAG|NACHI)\s+6\d{3}\s*(?:LLU|LLB|LLF|LLH|ZZ|2RS|DDU|OPEN)|RHP\s+(?:PSF20CR|PSF20/LP99))\s*',raw,re.I):
+                value=candidate_identity({'item_name': raw})
+                if value != candidate_identity({'item_name': text}):
+                    value=None  # Do not crop modifiers or other offered identities.
         elif field in ('delivered_eta','valid_until'):value=date_value(raw,at,field)
         elif field=='processing_hours':
             n=number(raw)

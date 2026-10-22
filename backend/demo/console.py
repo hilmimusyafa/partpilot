@@ -53,6 +53,8 @@ def reset(body:ResetInput,idempotency_key:str=KEY):
     return repo.query('SELECT pp.demo_reset(%s,%s,%s) AS result',(body.expected_generation,idempotency_key,body.confirmation))[0]['result']
 
 def default_comparison(run):
+    if run['identity'].get('unit_scope')=='complete_housed_unit':
+        raise repo.ProcurementError('benchmark_acknowledgment_required','Buka demo conveyor makanan untuk meninjau sumber dan asumsi benchmark downtime.',422)
     start=datetime.now(timezone.utc)
     def datum(value,unit):return dict(value=str(value),unit=unit,source=ASSUMPTIONS['source'],assumption_version='v1')
     production=dict(output_unit='units',currency='IDR',currency_scale=2,
@@ -87,6 +89,8 @@ def prepare_locked(run_id,idempotency_key):
         if old[0]['run_id']!=run_id:raise repo.ProcurementError('idempotency_conflict','Key already used')
         return read_comparison(old[0]['id'],initial=True)
     run=get_run(run_id)
+    if run['identity'].get('unit_scope')=='complete_housed_unit':
+        raise repo.ProcurementError('benchmark_acknowledgment_required','Gunakan halaman demo conveyor makanan untuk mengonfirmasi benchmark downtime.',422)
     if run.get('transport')!='whatsapp' and any(v['outcome']=='pending' for v in run['vendors']):
         raise repo.ProcurementError('vendors_pending','Jalankan simulator sebelum membandingkan')
     return create_comparison(run_id,default_comparison(run),idempotency_key)

@@ -1,8 +1,10 @@
 from datetime import datetime
 from decimal import Decimal
 from typing import Annotated, Literal
-from pydantic import BaseModel, ConfigDict, Field, AfterValidator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, AfterValidator, model_validator, model_serializer
+from backend.wo.identity import canonical_identity
 from backend.wo.models import ProductionEconomics, RestoreSchedule, EconomicCost, DonorCostDeclaration
+from .benchmark import ReportedDowntimeBenchmark
 
 def decimal_wire(v: str) -> str:
     import re
@@ -16,8 +18,23 @@ class Strict(BaseModel):
 
 class Identity(Strict):
     brand: str=Field(min_length=1,max_length=30)
-    base: str=Field(pattern=r'^6\d{3}$')
-    suffix: Literal['LLU','LLB','LLF','LLH','ZZ','2RS','DDU','OPEN']
+    base: str=Field(pattern=r'^(6\d{3}|PSF20)$')
+    suffix: Literal['LLU','LLB','LLF','LLH','ZZ','2RS','DDU','OPEN','CR','/LP99']
+    manufacturer: str | None=None
+    full_designation: str | None=None
+    unit_scope: str | None=None
+
+    @model_validator(mode='after')
+    def supported_identity(self):
+        payload={k: v for k, v in vars(self).items() if v is not None}
+        if canonical_identity(payload) is None:
+            raise ValueError('unsupported or incomplete canonical part identity')
+        return self
+
+    @model_serializer(mode='wrap')
+    def identity_wire(self, handler):
+        # Legacy snapshots compare JSON exactly; do not add null extension fields.
+        return {k: v for k, v in handler(self).items() if v is not None}
 
 class Quote(Strict):
     quote_id: str
@@ -66,7 +83,7 @@ class OptionAssumptions(Strict):
 
 class CompareInput(Strict):
     expected_version: int=Field(ge=1)
-    production: ProductionEconomics
+    production: ProductionEconomics | ReportedDowntimeBenchmark
     options: list[OptionAssumptions]=Field(max_length=10)
 
     @model_validator(mode='after')

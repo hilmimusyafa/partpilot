@@ -1,0 +1,83 @@
+[
+  {
+    "source_id": "NSK-SS-E-2003",
+    "filename": "nsk-ss-e-2003-food-production-conveyor.html",
+    "url": "https://www.nsk.com/am-en/tools-resources/bearings/aip/success-stories-overview/food-production-conveyor/",
+    "resolved_url": "https://www.nsk.com/am-en/tools-resources/bearings/aip/success-stories-overview/food-production-conveyor/",
+    "http_status": 200,
+    "content_type": "text/html;charset=utf-8",
+    "last_modified_http": "Thu, 22 Oct 2026 19:35:03 GMT",
+    "retrieved_utc": "2026-10-22T20:12:34.295624+00:00",
+    "retrieved_Asia_Jakarta": "2026-10-23T03:12:34.295624+07:00",
+    "bytes": 168180,
+    "sha256": "0110b725392654aa39c052bc3ad591ffe385488f6180888b5206451e1fa95055",
+    "locator": "Cost Saving Breakdown; Introduction; Key Facts",
+    "raw_snapshot_included": false
+  },
+  {
+    "source_id": "NSK-SS-E-2054",
+    "filename": "nsk-ss-e-2054-main-make-up-conveyor.html",
+    "url": "https://www.nsk.com/am-en/tools-resources/bearings/aip/success-stories-overview/main-make-up-conveyor/",
+    "resolved_url": "https://www.nsk.com/am-en/tools-resources/bearings/aip/success-stories-overview/main-make-up-conveyor/",
+    "http_status": 200,
+    "content_type": "text/html;charset=utf-8",
+    "last_modified_http": "Thu, 22 Oct 2026 19:36:27 GMT",
+    "retrieved_utc": "2026-10-22T20:12:34.960616+00:00",
+    "retrieved_Asia_Jakarta": "2026-10-23T03:12:34.960616+07:00",
+    "bytes": 166646,
+    "sha256": "df0df03e62e901228add574c11a61298deaf0ed84c9a572035c5f418a34003c4",
+    "locator": "Cost Saving Breakdown; Introduction; Key Facts",
+    "raw_snapshot_included": false
+  },
+  {
+    "source_id": "NSK-SS-E-2061",
+    "filename": "nsk-ss-e-2061-cutter-line.html",
+    "url": "https://www.nsk.com/am-en/tools-resources/bearings/aip/success-stories-overview/cutter-line/",
+    "resolved_url": "https://www.nsk.com/am-en/tools-resources/bearings/aip/success-stories-overview/cutter-line/",
+    "http_status": 200,
+    "content_type": "text/html;charset=utf-8",
+    "last_modified_http": "Thu, 22 Oct 2026 20:12:32 GMT",
+    "retrieved_utc": "2026-10-22T20:12:35.263683+00:00",
+    "retrieved_Asia_Jakarta": "2026-10-23T03:12:35.263683+07:00",
+    "bytes": 167798,
+    "sha256": "7ebd63df8ba5dce86bc44b1e57599828ff434d6f222e0a2229f331d97462c405",
+    "locator": "Cost Saving Breakdown; Introduction; Key Facts",
+    "raw_snapshot_included": false
+  },
+  {
+    "source_id": "NSK-SS-E-2034",
+    "filename": "nsk-ss-e-2034-confectionary-washing-process.html",
+    "url": "https://www.nsk.com/am-en/tools-resources/bearings/aip/success-stories-overview/confectionary-washing-process/",
+    "resolved_url": "https://www.nsk.com/am-en/tools-resources/bearings/aip/success-stories-overview/confectionary-washing-process/",
+    "http_status": 200,
+    "content_type": "text/html;charset=utf-8",
+    "last_modified_http": "Thu, 22 Oct 2026 20:12:36 GMT",
+    "retrieved_utc": "2026-10-22T20:12:35.883249+00:00",
+    "retrieved_Asia_Jakarta": "2026-10-23T03:12:35.883249+07:00",
+    "bytes": 168451,
+    "sha256": "a6fd5c625690bccc7f0d98413d1f953dc6c16844d5981c265f80f76dbe5996ac",
+    "locator": "Cost Saving Breakdown; Introduction; Key Facts",
+    "raw_snapshot_included": false
+  },
+  {
+    "source_id": "PERMA-BOTTLING-WASHDOWN",
+    "url": "https://www.permausa.com/learn-connect/case-studies/beverage-bottling-facility-eliminates-conveyor-bearing-failures-with-perma-flex",
+    "filename": "perma-bottling.html",
+    "retrieved_utc": "2026-10-22T20:14:09.567996+00:00",
+    "retrieved_Asia_Jakarta": "2026-10-23T03:14:09.567996+07:00",
+    "bytes": 116086,
+    "sha256": "f3d54583a64090ae76a5e794e1a6b40631e5d09fe206ddbe5e5ac0248f9f64b4",
+    "locator": "The Challenge: final paragraph",
+    "raw_snapshot_included": false
+  },
+  {
+    "source_id": "NSK-FOOD-BROCHURE-P15",
+    "url": "https://www.nsk.com/content/dam/nsk-marketing/projects-completed/literature/sector-brochures/food---beverage_sector-brochure/en_food_beverage_sector-brochure/preview-pdf_food_beverage_sector-brochure_en/EN_Food-and-Beverage_FB_Sector-Brochure_low-res.pdf",
+    "filename": "nsk-food-beverage-20p.pdf",
+    "retrieved_utc": "2026-10-22T20:13:43.488819+00:00",
+    "bytes": 2425797,
+    "sha256": "2c5c6fc17125b4e24c3ec589e98daff0d47583afe654099094c4fb185d542a79",
+    "locator": "Printed and PDF page15: seven-lane UK snack-food conveyor; Key Facts / Breakdown of cost savings",
+    "raw_snapshot_included": false
+  }
+]

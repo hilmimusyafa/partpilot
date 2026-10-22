@@ -11,12 +11,14 @@ def warehouse_quote(run,scope):
     # Explicit synthetic replenishment convention: restore donor ending stock.
     # No additional book-value charge. These are assumptions, not ERP prices.
     origin=scope['warehouse_id']==run['destination_warehouse_id']
+    food=run['identity'].get('unit_scope')=='complete_housed_unit'
+    candidate=run['identity'].get('full_designation')=='PSF20/LP99'
     return dict(quote_id=f"{run['id']}:{scope['warehouse_id']}",revision=1,identity=run['identity'],
-                qty_available=scope.get('available_qty'),quantity_unit='Nos',unit_price='150000',currency='IDR',
-                shipping_amount='0' if origin else '40000',tax_amount='0',processing_hours='0' if origin else '1',
-                delivered_eta=(datetime.fromisoformat(run['requested_at'])+timedelta(hours=0 if origin else 2)).isoformat(),
+                qty_available=scope.get('available_qty'),quantity_unit='Nos',unit_price=('4200000' if candidate else '3200000') if food else '150000',currency='IDR',
+                shipping_amount='0' if origin else ('250000' if food else '40000'),tax_amount='0',processing_hours='0' if origin else '1',
+                delivered_eta=(datetime.fromisoformat(run['requested_at'])+timedelta(hours=0 if origin else (4 if food else 2))).isoformat(),
                 destination_warehouse_id=run['destination_warehouse_id'],valid_until=run['expires_at'],
-                source='synthetic:replenishment-and-transfer-assumption',assumption_version='bearing-mvp-v1')
+                source='synthetic:replenishment-and-transfer-assumption',assumption_version='food-conveyor-v1' if food else 'bearing-mvp-v1')
 
 def sources(run):
     result=[]
@@ -44,6 +46,14 @@ def create_comparison(rid,body,key):
         if old[0]['run_id']!=rid or old[0]['request']!=request:raise repo.ProcurementError('idempotency_conflict','Key already used')
         return read_comparison(old[0]['id'], initial=True)
     run=get_run(rid);at=now()
+    from .benchmark import ReportedDowntimeBenchmark
+    food=run['identity'].get('unit_scope')=='complete_housed_unit'
+    if food and not isinstance(body.production,ReportedDowntimeBenchmark):
+        raise repo.ProcurementError('benchmark_acknowledgment_required','Food demo requires the explicit sourced benchmark mode',422)
+    if isinstance(body.production,ReportedDowntimeBenchmark):
+        stored=repo.query("SELECT facts FROM pp.maintenance_evidence WHERE id='economics:NSK-SS-E-2054'")
+        if not stored or stored[0]['facts']['reported'].get('production_loss_rate_per_hour')!='3332':
+            raise repo.ProcurementError('benchmark_evidence_missing','Verified published benchmark is missing',503)
     if run['version']!=body.expected_version:raise repo.ProcurementError('version_conflict','Run changed; refresh quotes')
     if body.production.currency!='IDR':raise repo.ProcurementError('incomparable_currency','Demo sources use IDR',422)
     all_sources=sources(run);assumptions={o.source_id:o for o in body.options}
@@ -83,11 +93,14 @@ def create_comparison(rid,body,key):
         economic=EconomicOption(option_id=option['option_id'],availability_snapshot_id=run['availability']['snapshot_id'],
                                 costs_nonduplicated=True,donor_cost_status=a.donor_cost_status,schedule=schedule,
                                 sourcing_costs=sourcing+a.donor_costs,incremental_disruption_costs=a.incremental_disruption_costs)
-        try:result=calculate_option_economics(body.production,economic)
+        try:
+            from .benchmark import ReportedDowntimeBenchmark,calculate_benchmark
+            result=(calculate_benchmark(body.production,economic) if isinstance(body.production,ReportedDowntimeBenchmark)
+                    else calculate_option_economics(body.production,economic).model_dump(mode='json'))
         except ValueError as exc:raise repo.ProcurementError('invalid_economics',str(exc),422) from None
-        option.update(valid_until=q['valid_until'],economics=result.model_dump(mode='json'),assumptions=a.model_dump(mode='json'))
-        if result.status=='incomplete':
-            option['reasons']=result.missing_inputs;unrankable.append(option)
+        option.update(valid_until=q['valid_until'],economics=result,assumptions=a.model_dump(mode='json'))
+        if result['status']=='incomplete':
+            option['reasons']=result['missing_inputs'];unrankable.append(option)
         else:eligible.append(option)
     eligible.sort(key=lambda o:(Decimal(o['economics']['future_relevant_option_total_unrounded']),o['source_kind'],o['source_id']))
     snapshot={'as_of':at.isoformat(),'source_run_version':run['version'],'production':body.production.model_dump(mode='json'),

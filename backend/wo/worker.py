@@ -26,6 +26,7 @@ ALLOWED_KEYS = {
     "brand",
     "base",
     "suffix",
+    "full_designation",
     "item_code",
     "item_name",
     "dimensions",
@@ -34,7 +35,7 @@ ALLOWED_KEYS = {
 }
 ALLOWED_SOURCES = {"description", "notes", "answer"}
 ALLOWED_SUFFIXES = {"LLU", "LLB", "LLF", "LLH", "ZZ", "2RS", "DDU", "OPEN"}
-KNOWN_BRANDS = {"NTN", "NSK", "SKF", "KOYO", "FAG", "NACHI"}
+KNOWN_BRANDS = {"NTN", "NSK", "SKF", "KOYO", "FAG", "NACHI", "RHP"}
 
 
 def prepare_rule_first_extraction(description, notes, accepted_answers, candidates,
@@ -234,6 +235,15 @@ def validate_extraction(
                 if norm_val != expected_norm or f_val != expected_norm:
                     return False, None, "suffix_normalization_mismatch"
 
+            elif f_key == "full_designation":
+                from backend.wo.identity import COMPLETE_SUFFIXES
+                expected_norm = raw_sub.strip().upper()
+                if (expected_norm not in COMPLETE_SUFFIXES or norm_val != expected_norm or
+                        f_val != expected_norm or not any(
+                            f.key == 'full_designation' and f.evidence[0].raw_substring == raw_sub.strip()
+                            for f in extract_facts_from_text(source_text, src_field))):
+                    return False, None, 'full_designation_evidence_invalid'
+
             elif f_key == "item_code":
                 expected_norm = raw_sub.strip()
                 if norm_val != expected_norm or f_val != expected_norm:
@@ -246,7 +256,10 @@ def validate_extraction(
 
             elif f_key == "category":
                 sub_lower = raw_sub.strip().lower()
-                if sub_lower not in ("bearing", "laher"):
+                # A grounded noun phrase may include the unit form. Keep this
+                # grammar narrow: incidental/negated bearing mentions are not
+                # category evidence, and the verbatim source check still applies.
+                if not re.fullmatch(r'(?:bearing|laher)(?:\s+unit)?(?:\s+flange)?(?:\s+lengkap)?', sub_lower):
                     return False, None, f"category_raw_unsupported_{sub_lower}"
                 expected_norm = "Bearing"
                 if f_val.strip().capitalize() != expected_norm or norm_val.strip().capitalize() != expected_norm:
@@ -316,7 +329,11 @@ def validate_extraction(
                 for f in validated_facts for ev in f['evidence']}
     for source, text, ref in sources:
         for fact in extract_facts_from_text(text, source):
-            if fact.key not in ('dimensions', 'seal_type', *PARTIAL_DIMENSION_PATTERNS):
+            # Preserve complete labels (and their explicit brands) even when the
+            # model omits them; catalog alternatives never become request facts.
+            preserved = ('dimensions', 'seal_type', 'full_designation', *PARTIAL_DIMENSION_PATTERNS)
+            complete_brand = fact.key == 'brand' and re.search(r'\bPSF\d', text, re.I)
+            if fact.key not in preserved and not complete_brand:
                 continue
             signature = (fact.key, fact.value, source, ref)
             if signature in existing:
@@ -334,6 +351,15 @@ def claim_next_job(worker_id: str = "worker-01") -> Optional[Dict[str, Any]]:
     """Claim next available job using repository claim."""
     from backend.wo.repository import claim_next_job as repo_claim
     return repo_claim(worker_id)
+
+
+def load_food_catalog_note(conn, session, warehouse_id):
+    """Resolve the requested complete unit through the shared OEM evidence boundary."""
+    from backend.wo.food_catalog import load_food_catalog_identity
+    from backend.wo.identity import candidate_identity
+    requested = session.get('input') or {}
+    identity = candidate_identity({'item_name': requested.get('description'), 'description': requested.get('notes')})
+    return load_food_catalog_identity(conn, identity, session.get('company'), warehouse_id)
 
 
 def process_job(job: Dict[str, Any]) -> Dict[str, Any]:
@@ -390,7 +416,11 @@ def process_job(job: Dict[str, Any]) -> Dict[str, Any]:
                 }
                 break
 
-        if pinned_note:
+        if session.get('site_id') == 'FOOD-SITE':
+            # Food catalog rows are immutable and versioned. Reload the selected
+            # extract so a historical AC snapshot can never replace OEM evidence.
+            note_info = load_food_catalog_note(conn, session, warehouse_id)
+        elif pinned_note:
             note_info = pinned_note
         else:
             note_info = load_scoped_note(warehouse_id, "Bearing")
@@ -590,11 +620,16 @@ def process_job(job: Dict[str, Any]) -> Dict[str, Any]:
         "Analyze the description, notes, and answers to extract verified physical part facts.\n"
         "Your output must be a single JSON object with EXACTLY ONE key 'facts', containing a list of fact objects.\n"
         "Each fact object must have EXACTLY four keys: 'key', 'value', 'source', 'evidence'.\n"
-        "Allowed keys: 'category', 'quantity', 'brand', 'base', 'suffix', 'item_code', 'item_name', 'dimensions', 'seal_type', 'inner_diameter_mm', 'outer_diameter_mm', 'width_mm'.\n"
+        "Allowed keys: 'category', 'quantity', 'brand', 'base', 'suffix', 'full_designation', 'item_code', 'item_name', 'dimensions', 'seal_type', 'inner_diameter_mm', 'outer_diameter_mm', 'width_mm'.\n"
         "Allowed sources: 'description', 'notes', 'answer'.\n"
         "Evidence must be a list of 1 to 8 objects with 'source_field' (must equal source), 'raw_substring', 'normalized_value', and optional 'source_ref' (only for answer source).\n"
         "CRITICAL: 'raw_substring' must be an exact, case-sensitive substring found verbatim in the referenced source.\n"
+        "For category Bearing, prefer the shortest explicit source token 'bearing' or 'laher' as evidence; "
+        "a verbatim noun phrase such as 'bearing unit flange' is also supported. "
+        "Never infer the category from incidental or negated bearing mentions. "
         "For bearing NTN 6200LLU, extract brand NTN, base 6200, suffix LLU separately. "
+        "For RHP PSF20CR or RHP PSF20/LP99 complete bearing units, extract brand RHP and full_designation PSF20CR or PSF20/LP99; do not split these into base/suffix. "
+        "Keep the whole designation exactly; never discard modifiers, convert NSK to RHP, or substitute an insert code for a complete unit. "
         "Manufacturer part numbers are not local warehouse item_code values. "
         "Never infer brand or suffix from dimensions or generic seal names. "
         "Extract dimensions from d x D x B or explicit diameter dalam/lubang, diameter luar, lebar in mm; normalize to 10x30x9. "

@@ -10,7 +10,7 @@ def status():return service.status()
 def connect(body:EmptyInput):return service.bridge('/connect',{})
 
 @router.get('/conversations')
-def conversations():return service.conversations()
+def conversations(run_id:str|None=None):return service.conversations(run_id)
 
 @router.post('/runs/{run_id}/start')
 def start(run_id:str,body:EmptyInput):return service.start(run_id)

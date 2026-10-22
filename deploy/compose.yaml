@@ -22,7 +22,7 @@ services:
       driver: json-file
       options: {max-size: "10m", max-file: "3"}
   api:
-    image: partpilot-demo:20261022
+    image: partpilot-demo:20261023-evidence-r4
     build:
       context: ..
       dockerfile: deploy/Dockerfile
@@ -37,6 +37,13 @@ services:
     volumes:
       - /home/rifqisetiawan/.config/partpilot/demo-runtime.env:/run/partpilot/runtime.env:ro
       - /home/rifqisetiawan/.config/partpilot/whatsapp.env:/run/partpilot/whatsapp.env:ro
+      - /home/rifqisetiawan/.config/partpilot/gateway-codex.env:/run/partpilot/gateway.env:ro
+    environment:
+      PARTPILOT_AI_PROVIDER: "9router"
+      PARTPILOT_MODEL: "ag/gemini-3.8-flash-low"
+      GOOGLE_CLOUD_PROJECT: "hackathon-primestep-16"
+      GOOGLE_CLOUD_LOCATION: "global"
+      PARTPILOT_WA_ALLOWED_RECIPIENTS: "6282178830078"
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:18080/api/v1/health',timeout=3)"]
       interval: 15s
@@ -44,11 +51,12 @@ services:
       retries: 3
     logging: *logging
   worker:
-    image: partpilot-demo:20261022
+    image: partpilot-demo:20261023-evidence-r4
     environment:
       PARTPILOT_GATEWAY_TIMEOUT_SECONDS: "60"
       PARTPILOT_BEARING_RULE_FIRST: "true"
       PARTPILOT_MODEL: "ag/gemini-3.8-flash-low"
+      PARTPILOT_AI_PROVIDER: "9router"
     command: ["python", "scripts/demo_runtime.py", "worker"]
     network_mode: host
     restart: unless-stopped
@@ -76,10 +84,12 @@ services:
     volumes: [wa-state:/state]
     logging: *logging
   chat-worker:
-    image: partpilot-demo:20261022
+    image: partpilot-demo:20261023-evidence-r4
     environment:
       PARTPILOT_GATEWAY_TIMEOUT_SECONDS: "60"
       PARTPILOT_MODEL: "ag/gemini-3.8-flash-low"
+      PARTPILOT_AI_PROVIDER: "9router"
+      PARTPILOT_WA_ALLOWED_RECIPIENTS: "6282178830078"
     command: ["python", "scripts/demo_runtime.py", "whatsapp"]
     network_mode: host
     restart: unless-stopped

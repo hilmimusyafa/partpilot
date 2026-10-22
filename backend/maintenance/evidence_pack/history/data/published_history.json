@@ -1,0 +1,57 @@
+{
+  "case_id": "NSK-SS-E-2003",
+  "evidence_type": "PUBLISHED_OEM_CUSTOMER_CASE",
+  "source_id": "nsk-case-ss-e-2003",
+  "customer_anonymized": true,
+  "is_customer_cmms_export": false,
+  "is_partpilot_user_asset_history": false,
+  "asset_id": null,
+  "publication_date": null,
+  "historical_original_sku": null,
+  "historical_replacement_sku": null,
+  "chronology": [
+    {
+      "order": 1,
+      "event_date": null,
+      "type": "recurrence",
+      "failure_interval_weeks": [
+        4,
+        6
+      ],
+      "locator": "Introduction"
+    },
+    {
+      "order": 2,
+      "event_date": null,
+      "type": "investigation",
+      "reported_findings": [
+        "corrosion",
+        "seal damage",
+        "grease wash-out associated with high-pressure washing"
+      ],
+      "locator": "Introduction / Key Facts"
+    },
+    {
+      "order": 3,
+      "event_date": null,
+      "type": "intervention",
+      "family": "NSK Life-Lube / stainless Molded-Oil inserts",
+      "trial_sample_bearings": 10,
+      "locator": "Key Facts / Value Proposals"
+    },
+    {
+      "order": 4,
+      "event_date": null,
+      "type": "observed_outcome",
+      "observation_months": 12,
+      "failures_reported": 0,
+      "locator": "Value Proposals / Cost Saving Breakdown"
+    }
+  ],
+  "source_quality_flags": [
+    "Introduction interval 4-6 weeks; cost-table interval 4-5 weeks.",
+    "Cost table contains a one-dollar rounding mismatch; monetary claims excluded from this demo."
+  ],
+  "inference_limit": "External precedent for considering washdown suitability; not proof of the current asset cause or approved replacement.",
+  "independent_validation_found_in_reviewed_sources": false
+}

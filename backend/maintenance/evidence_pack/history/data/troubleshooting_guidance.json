@@ -1,0 +1,23 @@
+{
+  "evidence_type": "OEM_TROUBLESHOOTING_GUIDANCE",
+  "source_id": "nsk-rust-corrosion",
+  "locator": "Damage Condition / Possible Causes / Countermeasures",
+  "damage_type": "rust_and_corrosion",
+  "source_reported_possible_causes": [
+    "water or corrosive gas entry",
+    "unsuitable lubricant",
+    "moisture condensation",
+    "hot and humid stationary conditions",
+    "inadequate transport protection",
+    "storage conditions",
+    "handling"
+  ],
+  "source_reported_countermeasures": [
+    "review sealing",
+    "review lubrication method",
+    "rust protection while idle",
+    "improve storage",
+    "improve handling"
+  ],
+  "application_limit": "General bearing guidance, not a confirmed diagnosis, a product-specific repair procedure, or permission to relubricate Molded-Oil inserts."
+}

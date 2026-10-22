@@ -1,0 +1,98 @@
+[
+  {
+    "source_id": "nsk-case-ss-e-2003",
+    "url": "https://www.nsk.com/am-en/tools-resources/bearings/aip/success-stories-overview/food-production-conveyor/",
+    "evidence_type": "primary manufacturer case; anonymized customer",
+    "locator": "Introduction; Key Facts; Value Proposals; Reference SS-E-2003",
+    "fetched_at_utc": "2026-10-22T19:36:15.0459161Z",
+    "fetched_at_jakarta": "2026-10-23T02:36:15.045916+07:00",
+    "sha256": "0110b725392654aa39c052bc3ad591ffe385488f6180888b5206451e1fa95055",
+    "bytes": 168180,
+    "capture_status": "downloaded_and_hash_checked",
+    "raw_snapshot_included": false
+  },
+  {
+    "source_id": "nsk-self-lube-current",
+    "url": "https://www.nsk.com/content/dam/nsk-marketing/projects-completed/literature/product-brochures/self-lube-bearings_product-brochure/en_self-lube-bearings_product-brochure/preview-pdf_self-lube-bearings_product-brochure_en/EN_Self_Lube_Bearings_SLB_Product-Brochure_low-res.pdf",
+    "evidence_type": "primary manufacturer catalog",
+    "locator": "Printed 100,104-105,123-125,128-129,134-135; PDF page = printed page + 2",
+    "fetched_at_utc": "2026-10-22T19:36:14.6375183Z",
+    "fetched_at_jakarta": "2026-10-23T02:36:14.637518+07:00",
+    "sha256": "2241110d474c75f537aac693fd4f2553273dbd9b162e2addc275e51d687b2f13",
+    "bytes": 11002742,
+    "capture_status": "downloaded_and_hash_checked",
+    "raw_snapshot_included": false
+  },
+  {
+    "source_id": "nsk-life-lube-datasheet",
+    "url": "https://www.nsk.com/eu-en/products/data-sheets/life-lube/",
+    "evidence_type": "primary manufacturer family product data",
+    "locator": "Product family description; application scope",
+    "fetched_at_utc": "2026-10-22T19:37:08.1933631Z",
+    "fetched_at_jakarta": "2026-10-23T02:37:08.193363+07:00",
+    "sha256": "a9316c5fe60848e0abf5f7cf6d18960e133d24ae098c5d8b0331c855391e7027",
+    "bytes": 256562,
+    "capture_status": "downloaded_and_hash_checked",
+    "raw_snapshot_included": false
+  },
+  {
+    "source_id": "nsk-stainless-units-e1235a",
+    "url": "https://www.nsk.com/content/dam/nsk/common/catalogs/ctrgPdf/bearings/e1235a.pdf",
+    "evidence_type": "primary manufacturer catalog",
+    "locator": "PDF page 2: pillow-block assembly; negative control only",
+    "fetched_at_utc": "2026-10-22T19:36:07.4014049Z",
+    "fetched_at_jakarta": "2026-10-23T02:36:07.401404+07:00",
+    "sha256": "0acf3d2f65032d23ab90ad861d10b53709bb09b16d39702b9d77e6578137e9c9",
+    "bytes": 358451,
+    "capture_status": "downloaded_and_hash_checked",
+    "raw_snapshot_included": false
+  },
+  {
+    "source_id": "gerald-summers-psf-units",
+    "url": "https://www.gerald-summers.co.uk/rhp/bearings/bearing-units/corrosion-resistant-bearing-units-and-inserts/plastic-housings-with-stainless-steel-inserts/",
+    "evidence_type": "distributor offering; availability not committed stock",
+    "locator": "Product rows PSF20CR and PSF20/LP99",
+    "fetched_at_utc": "2026-10-22T19:38:30.6269476Z",
+    "fetched_at_jakarta": "2026-10-23T02:38:30.626947+07:00",
+    "sha256": "5bea7d8bc9d625ad003b0b1286fa3764a1cc3ba6a2c0be4dd087a76b554b8dd4",
+    "bytes": 41839,
+    "capture_status": "downloaded_and_hash_checked",
+    "raw_snapshot_included": false
+  },
+  {
+    "source_id": "acorn-psf20-lp99",
+    "url": "https://www.acorn-ind.co.uk/p/rhp/square-4-bolt-flanged-units/psf20/lp99-rhp/",
+    "evidence_type": "distributor commercial lead; web listing only",
+    "locator": "Manufacturer part number; availability; locale-specific pricing",
+    "fetched_at_utc": "2026-10-22T19:38:32.8064845Z",
+    "fetched_at_jakarta": "2026-10-23T02:38:32.806484+07:00",
+    "sha256": "dfd39f3a5be67965da297e9ff9e320c99c69e050556bb5d799b195830fd3e210",
+    "bytes": 40757,
+    "capture_status": "downloaded_and_hash_checked",
+    "raw_snapshot_included": false
+  },
+  {
+    "source_id": "nsk-snack-2023",
+    "url": "https://www.nsk.com/eu-en/company/news/2023/nsk-bearings-deliver-major-savings-at-snack-food-plant/",
+    "evidence_type": "manufacturer_published_case_supporting_only",
+    "locator": "Article date; AIP investigation; final trial results",
+    "fetched_at_utc": "2026-10-22T19:35:33.896073+00:00",
+    "fetched_at_jakarta": "2026-10-23T02:35:33.896073+07:00",
+    "sha256": "cc9f6d4c1c06c6001b0ace90a43d64306f94c70dc0537d587b82761aea779367",
+    "bytes": 221322,
+    "capture_status": "downloaded_and_hash_checked",
+    "raw_snapshot_included": false
+  },
+  {
+    "source_id": "nsk-rust-corrosion",
+    "url": "https://www.nsk.com/am-en/tools-resources/bearings/troubleshooting/damage-by-type/rust-and-corrosion/",
+    "evidence_type": "primary manufacturer troubleshooting guidance",
+    "locator": "Rust and Corrosion: Damage Condition / Possible Causes / Countermeasures",
+    "fetched_at_utc": "2026-10-22T19:56:34.376745+00:00",
+    "fetched_at_jakarta": "2026-10-23T02:56:34.376745+07:00",
+    "sha256": "91f6b98002328b63cd2d36736a98ec96038f4bd8a3fb5f457ae9c2932c454836",
+    "bytes": 178415,
+    "capture_status": "downloaded_and_hash_checked",
+    "raw_snapshot_included": false
+  }
+]

@@ -1,0 +1,73 @@
+{
+  "evidence_type": "OEM_CATALOG_FACTS",
+  "source_id": "nsk-self-lube-current",
+  "historical_case_BOM_claim": false,
+  "selected_demo_request": {
+    "brand": "RHP / NSK",
+    "sku": "PSF20CR",
+    "unit_scope": "complete_four_bolt_flange_unit",
+    "family": "Silver-Lube",
+    "catalog_pages": [
+      100,
+      104,
+      105
+    ]
+  },
+  "alternative_candidate": {
+    "brand": "RHP / NSK",
+    "sku": "PSF20/LP99",
+    "unit_scope": "complete_four_bolt_flange_unit",
+    "family": "Life-Lube",
+    "insert": "F-UC204/LP99",
+    "catalog_pages": [
+      123,
+      124,
+      125,
+      128,
+      129
+    ],
+    "approval_status": "PENDING_ENGINEERING_AND_HYGIENE_REVIEW"
+  },
+  "shared_catalog_interface_mm": {
+    "shaft_d": 20,
+    "L": 86.5,
+    "J": 63.5,
+    "fixing_bolt": "M10",
+    "A": 27.8,
+    "A1": 36.3,
+    "A4": 13.4,
+    "B": 31,
+    "s": 12.7
+  },
+  "alternative_insert_operating_limits": {
+    "recommended_C": [
+      -15,
+      80
+    ],
+    "continuous_below_C": 60,
+    "locator_printed_page": 125
+  },
+  "alternative_food_grade_evidence": "NSF H1 / food-contact approval not established by selected LP99 documents",
+  "technical_approval_missing": [
+    "actual marking and BOM",
+    "shaft fit and housing arrangement",
+    "load direction, duty and housing derating",
+    "speed",
+    "temperature including cleaning",
+    "washdown pressure and chemistry",
+    "hygiene constraints",
+    "maintenance engineer sign-off"
+  ],
+  "negative_controls": [
+    {
+      "sku": "F-UC204/LP99",
+      "reason": "insert alone is not a complete PSF flange unit"
+    },
+    {
+      "sku": "F-UCPM204D0/LP99",
+      "reason": "pillow-block assembly has a different mount; not an exact flange-unit match",
+      "source_id": "nsk-stainless-units-e1235a"
+    }
+  ],
+  "normalization_policy": "Preserve brand and full suffix; retailer codes are aliases only when an explicit manufacturer-part field supports the mapping."
+}

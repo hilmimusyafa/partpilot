@@ -25,7 +25,7 @@ def query(sql,params=()):
                  'option_ineligible_or_expired','quote_changed','stock_changed','comparison_not_found',
                  'invalid_source_snapshot','invalid_comparison','item_changed','run_already_exists','unsupported_source_unit','reset_disabled','reset_confirmation_required','generation_conflict','demo_busy'}
         allowed.update({'wa_consent_or_window_required','wa_simulator_already_started','wa_conversation_closed','wa_quote_window_expired','wa_followup_limit','wa_recipient_not_allowed','wa_message_not_found','wa_invalid_delivery_transition','wa_invalid_extraction'})
-        allowed.add('negotiation_plan_mismatch')
+        allowed.update({'negotiation_plan_mismatch','engineering_approval_required','maintenance_request_already_selected'})
         code=msg if msg in allowed else 'procurement_storage_error'
         raise ProcurementError(code,code,409 if code in allowed else 503) from None
 

@@ -8,6 +8,11 @@ from .repository import query,call,available
 from .extraction import FIELDS,LABELS
 
 def bridge(path,body=None):
+    if path in ('/send','/check'):
+        from .safety import require_allowed_recipient
+        try: body={**(body or {}),'phone':require_allowed_recipient((body or {}).get('phone',''))}
+        except ValueError:
+            raise procurement.ProcurementError('recipient_not_allowlisted','Nomor ini di luar daftar pengujian WhatsApp yang diizinkan',422) from None
     token=os.environ.get('PARTPILOT_WA_INTERNAL_TOKEN','')
     if not token:raise procurement.ProcurementError('whatsapp_not_configured','Koneksi WhatsApp belum dikonfigurasi',503)
     try:
@@ -19,7 +24,7 @@ def bridge(path,body=None):
         raise procurement.ProcurementError('whatsapp_unavailable','Koneksi WhatsApp belum tersedia; lihat halaman WhatsApp',503) from None
 
 def status():
-    recipients=query('SELECT id,label,opted_in,demo_invite_until,destination FROM pp.wa_recipient ORDER BY id') if available() else []
+    recipients=query('SELECT id,label,opted_in,demo_invite_until,destination FROM pp.wa_recipient WHERE opted_in ORDER BY id') if available() else []
     try:result=bridge('/status')
     except procurement.ProcurementError:result={'connection':'disconnected','qr_data_url':None,'enabled':False}
     can_start=len(recipients)>0 and all(r['opted_in'] and r['destination'] and r['demo_invite_until'] and r['demo_invite_until']>datetime.now(timezone.utc) for r in recipients)

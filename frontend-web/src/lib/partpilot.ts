@@ -36,7 +36,7 @@ export type Option = {
   option_id: string; source_kind: string; source_id: string; item_code?: string;
   quote: Quote | null; reasons?: string[]; valid_until?: string;
   assumptions?: { schedule?: { stages?: { kind: string; end: string }[] } };
-  economics?: { sourcing_total?: string; unrecoverable_lost_contribution?: string;
+  economics?: { mode?: string; estimated_production_loss?: string; effective_scheduled_impacted_hours?: string; sourcing_total?: string; unrecoverable_lost_contribution?: string;
     incremental_disruption_total?: string; future_relevant_option_total?: string; future_relevant_option_total_unrounded?: string };
 };
 function decimalParts(value: string | undefined) {
@@ -94,7 +94,7 @@ export async function api<T>(path: string, body?: unknown, key?: string): Promis
     cache: "no-store", credentials: "same-origin",
     headers: { ...(body !== undefined ? { "Content-Type": "application/json", "X-PartPilot-Request": "demo", "X-PartPilot-Generation": String(activeGeneration ?? "") } : {}), ...(key ? { "Idempotency-Key": key } : {}) },
     ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
-    signal: AbortSignal.timeout(60000),
+    signal: AbortSignal.timeout(path === '/maintenance/assess' ? 120000 : 60000),
   });
   const data = await response.json().catch(() => null);
   if (!response.ok) throw new ApiError(data?.error?.message || `Permintaan gagal (${response.status}). Muat ulang lalu coba lagi.`, response.status, data?.error?.code);

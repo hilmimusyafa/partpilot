@@ -14,13 +14,14 @@ def load(path,allowed):
 def main():
     load('/run/partpilot/runtime.env',{'DATABASE_URL','PARTPILOT_DEMO_PASSWORD','PARTPILOT_PUBLIC_ORIGIN','PARTPILOT_DEMO_PUBLIC_ACCESS'})
     if Path('/run/partpilot/whatsapp.env').exists():
-        load('/run/partpilot/whatsapp.env',{'PARTPILOT_WA_INTERNAL_TOKEN'})
+        load('/run/partpilot/whatsapp.env',{'PARTPILOT_WA_INTERNAL_TOKEN','PARTPILOT_WA_ALLOWED_RECIPIENTS'})
+    if Path('/run/partpilot/gateway.env').exists():
+        load('/run/partpilot/gateway.env',{'HERMES_9ROUTER_API_KEY','HERMES_9ROUTER_BASE_URL','PARTPILOT_AI_PROVIDER','PARTPILOT_MODEL','GOOGLE_CLOUD_PROJECT','GOOGLE_CLOUD_LOCATION','GOOGLE_APPLICATION_CREDENTIALS'})
     if sys.argv[1]=='api':
         if os.environ.get('PARTPILOT_DEMO_PUBLIC_ACCESS') != 'true' and not os.environ.get('PARTPILOT_DEMO_PASSWORD'):raise RuntimeError('Missing demo login')
         import uvicorn
         uvicorn.run('backend.demo.app:app',host='127.0.0.1',port=18080,proxy_headers=True,forwarded_allow_ips='127.0.0.1',access_log=False)
     elif sys.argv[1]=='worker':
-        load('/run/partpilot/gateway.env',{'HERMES_9ROUTER_API_KEY','HERMES_9ROUTER_BASE_URL'})
         from backend.wo.gateway import runtime_timeout
         runtime_timeout()  # Validate bounded configuration before claiming any job.
         from backend.wo.worker import claim_next_job,process_job
@@ -39,7 +40,6 @@ def main():
                 print('Worker tick failed:',type(exc).__name__,flush=True)
             time.sleep(1)
     elif sys.argv[1]=='whatsapp':
-        load('/run/partpilot/gateway.env',{'HERMES_9ROUTER_API_KEY','HERMES_9ROUTER_BASE_URL'})
         from backend.whatsapp.worker import run
         run()
     else:raise ValueError('Expected api, worker or whatsapp')

@@ -14,6 +14,15 @@ VENDORS={
 class DemoSimulator:
     def send(self,event):
         vendor=event['vendor_id'];p=event['payload'];data=VENDORS[vendor]
+        if p['identity'].get('unit_scope')=='complete_housed_unit':
+            candidate=p['identity'].get('full_designation')=='PSF20/LP99'
+            data={
+                'SIM-ENOUGH':dict(quantity='2',price='4200000' if candidate else '3200000',shipping='250000',hours=3 if candidate else 8),
+                'SIM-SHORT':dict(quantity='1',price='4000000' if candidate else '3000000',shipping='300000',hours=6),
+                'SIM-REFUSE':dict(quantity='3',price='4400000' if candidate else '3400000',shipping='300000',hours=14),
+                'SIM-REVISE':dict(quantity='2',price='4500000' if candidate else '3500000',shipping='200000',hours=5),
+                'SIM-SILENT':VENDORS['SIM-SILENT'],
+            }[vendor]
         envelope={'event_id':event['id'],'run_id':event['run_id'],'vendor_id':vendor}
         if vendor=='SIM-SILENT':
             # This is a simulated deadline outcome, not an assertion of zero stock.
