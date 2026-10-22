@@ -24,7 +24,7 @@ export type Run = {
   id: string; version: number; status: string; quantity: string;
   transport?: "simulator" | "whatsapp";
   exchanges?: unknown[];
-  identity: { brand: string; base: string; suffix: string };
+  identity: { brand: string; base: string; suffix: string; unit_scope?: string };
   availability: { origin: Scope; alternatives: Scope[]; complete: boolean };
   vendors: { vendor_id: string; outcome: string; counteroffers_used: number; quote: Quote | null; initial_quote: Quote | null; eligible: boolean; ineligible_reasons?: string[] }[];
   decision?: { option_id: string; comparison_id?: string };

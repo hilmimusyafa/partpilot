@@ -4,7 +4,7 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { CheckCircle2, LoaderCircle } from "lucide-react";
 import { api, ApiError, errorMessage, label, money, stockQuantity, sourceName, warehouseName, type Comparison, type DemoConfig, type Option, type PurchaseOrder, type PurchaseOrderResult, type Run, type Session, type WhatsAppConversation, type WhatsAppConversations, type WhatsAppStatus } from "@/lib/partpilot";
-import { card, DemoShell, ErrorNotice, primary, secondary } from "./demo-shell";
+import { card, DemoShell, ErrorNotice, field, primary, secondary } from "./demo-shell";
 import { PurchaseOrderCard, SourceComparison, SourceRecommendation } from "./source-comparison";
 import { WarehouseStock } from "./warehouse-stock";
 import { useLiveComparison } from "./use-live-comparison";
@@ -30,6 +30,9 @@ function DecisionContent({ sessionId }: { sessionId: string | null }) {
   const [session, setSession] = useState<Session | null>(null);
   const [run, setRun] = useState<Run | null>(null);
   const [comparison, setComparison] = useState<Comparison | null>(null);
+  const [benchmarkAck, setBenchmarkAck] = useState(false);
+  const [mapping, setMapping] = useState("16000");
+  const foodRun = run?.identity.unit_scope === "complete_housed_unit";
   const [selected, setSelected] = useState("");
   const [confirm, setConfirm] = useState<Option | null>(null);
   const [confirmationComparison, setConfirmationComparison] = useState<Comparison | null>(null);
@@ -113,8 +116,12 @@ function DecisionContent({ sessionId }: { sessionId: string | null }) {
     try {
       const started = run || await api<Run>("/demo/sourcing-runs", { session_id: session.id, expected_version: session.version }, `source-${session.id}-${session.version}`);
       setRun(started);
-      const ready = started;
-      const result = await api<Comparison>(`/demo/sourcing-runs/${started.id}/prepare-comparison`, {}, `manual-comparison-${ready.id}-${crypto.randomUUID()}`); setComparison(result);
+      const key = `manual-comparison-${started.id}-${crypto.randomUUID()}`;
+      if (started.identity.unit_scope === "complete_housed_unit" && !benchmarkAck) throw new Error("Konfirmasikan penggunaan benchmark dan pemetaan simulasi terlebih dahulu.");
+      const result = started.identity.unit_scope === "complete_housed_unit"
+        ? await api<Comparison>(`/food-demo/sourcing-runs/${started.id}/comparison`, {external_applicability_acknowledged:true, idr_per_published_currency_unit:mapping, conversion_assumption_acknowledged:true}, key)
+        : await api<Comparison>(`/demo/sourcing-runs/${started.id}/prepare-comparison`, {}, key);
+      setComparison(result);
     } catch (e) { setError(errorMessage(e)); } finally { setBusy(false); }
   }
   async function loadPurchaseOrder(runId: string) {
@@ -156,7 +163,7 @@ function DecisionContent({ sessionId }: { sessionId: string | null }) {
   return <DemoShell title="Meja keputusan" config={config} decision>
     <ErrorNotice message={error} />
     <ErrorNotice message={live.error} />
-    {run?.transport === "whatsapp" && !selected && <p role="status" className="text-sm text-[#17375E]">{confirm && comparisonStale ? "Ada penawaran baru. Konfirmasi yang sedang dibuka tetap menampilkan pilihan sebelumnya; tutup untuk meninjau pembaruan." : live.refreshing || comparisonStale ? "Memperbarui perbandingan dari penawaran terbaru…" : "Penawaran dan peringkat diperbarui otomatis setiap 5 detik."}</p>}
+    {run?.transport === "whatsapp" && !selected && <p role="status" className="text-sm text-[#17375E]">{confirm && comparisonStale ? "Ada penawaran baru. Konfirmasi yang sedang dibuka tetap menampilkan pilihan sebelumnya; tutup untuk meninjau pembaruan." : foodRun ? "Balasan diperbarui setiap 5 detik. Klik perbarui perbandingan setelah penawaran berubah." : live.refreshing || comparisonStale ? "Memperbarui perbandingan dari penawaran terbaru…" : "Penawaran dan peringkat diperbarui otomatis setiap 5 detik."}</p>}
     {loading && <p role="status">Memuat hasil dari server…</p>}
     {comparison && <SourceRecommendation comparison={comparison} config={config} selected={selected} busy={busy || live.refreshing || comparisonStale} onChoose={openConfirmation} />}
     {selectedVendor && <PurchaseOrderCard purchaseOrder={purchaseOrder} error={poError} busy={poBusy} onRetry={() => { if (run) void loadPurchaseOrder(run.id); }} />}
@@ -168,8 +175,9 @@ function DecisionContent({ sessionId }: { sessionId: string | null }) {
     {run && !selected && (!comparison || run.transport === "whatsapp") && <section className={`${card} space-y-4`}><h2 className="text-lg font-bold text-[#0F274A]">{run.status === "fulfilled_source" ? "Bandingkan sumber yang tersedia" : "Penawaran vendor melalui WhatsApp"}</h2>
       {run.status !== "fulfilled_source" && run.transport !== "whatsapp" && !comparison && <><p className="text-sm text-gray-600">Stok gudang asal kurang. Gunakan tombol di bawah untuk menghubungi nomor pengujian yang diizinkan. Balasan vendor digunakan untuk melengkapi stok, harga, ongkir, pajak, dan waktu tiba.</p>{<button className={primary} disabled={busy} onClick={() => void startWhatsApp(true)}>Kirim RFQ WhatsApp pengujian</button>}</>}
       {run.transport === "whatsapp" && (automationError === "whatsapp" || incompleteWhatsAppStart) && <button className={secondary} disabled={busy} onClick={() => void startWhatsApp(true)}>Coba lengkapi pengiriman penawaran</button>}
-      {(run.transport === "whatsapp" || run.status === "fulfilled_source") && <><p className="text-sm text-gray-600">{run.transport === "whatsapp" ? "Balasan dan perbandingan diperbarui otomatis. Stok kosong dibedakan dari vendor yang belum menjawab. Setelah penawaran lengkap, sistem menawar maksimal satu kali per vendor bila target harga memungkinkan. Penawaran belum lengkap atau masih dinegosiasikan belum dapat dipilih." : "Stok gudang asal memenuhi kebutuhan. Siapkan perbandingan tanpa menghubungi vendor."}</p><button className={primary} disabled={busy || live.refreshing || !config || !!confirm} onClick={prepare}>{busy ? "Menyiapkan…" : waitingForVendors ? "Bandingkan data yang tersedia" : comparison ? "Perbarui perbandingan" : "Siapkan perbandingan"}</button></>}
+      {!foodRun && (run.transport === "whatsapp" || run.status === "fulfilled_source") && <><p className="text-sm text-gray-600">{run.transport === "whatsapp" ? "Balasan dan perbandingan diperbarui otomatis. Stok kosong dibedakan dari vendor yang belum menjawab. Setelah penawaran lengkap, sistem menawar maksimal satu kali per vendor bila target harga memungkinkan. Penawaran belum lengkap atau masih dinegosiasikan belum dapat dipilih." : "Stok gudang asal memenuhi kebutuhan. Siapkan perbandingan tanpa menghubungi vendor."}</p><button className={primary} disabled={busy || live.refreshing || !config || !!confirm} onClick={prepare}>{busy ? "Menyiapkan…" : waitingForVendors ? "Bandingkan data yang tersedia" : comparison ? "Perbarui perbandingan" : "Siapkan perbandingan"}</button></>}
     </section>}
+    {foodRun && !selected && <section className={`${card} space-y-4`}><h2 className="text-lg font-bold">Benchmark biaya produksi hilang</h2><p className="text-sm">NSK SS-E-2054: 3.332 unit $ publikasi/jam. ISO mata uang dan tahun harga tidak diketahui. Nilai rupiah merupakan estimasi skenario.</p><label className="block text-sm">Asumsi IDR per satu unit dolar publikasi<input className={field} value={mapping} onChange={e=>setMapping(e.target.value)}/></label><label className="flex gap-3 text-sm"><input type="checkbox" checked={benchmarkAck} onChange={e=>setBenchmarkAck(e.target.checked)}/>Saya memahami penerapan benchmark dan konversi ini adalah asumsi simulasi.</label><button className={primary} disabled={busy||live.refreshing||!benchmarkAck||!!confirm} onClick={prepare}>Hitung / perbarui perbandingan</button></section>}
     {comparison && <SourceComparison comparison={comparison} config={config} selected={selected} busy={busy || live.refreshing || comparisonStale} onChoose={openConfirmation} />}
     {run && <WarehouseStock run={run} config={config} />}
     {run && run.vendors.length > 0 && <section className={`${card} overflow-x-auto`}><h2 className="text-lg font-bold">{run.transport === "whatsapp" ? "Penawaran WhatsApp nyata" : "Penawaran simulator"}</h2><p className="mb-4 mt-1 text-sm text-slate-600">{run.transport === "whatsapp" ? "Hanya penawaran dari balasan vendor yang ditampilkan. Maksimal satu penawaran harga per vendor." : "Data sintetis, maksimal satu penawaran harga per vendor. Tidak ada pesan WhatsApp nyata."}</p>{run.negotiation && <p className="mb-4 rounded-xl bg-[#F8E8B6]/60 p-3 text-sm text-[#0F274A]">Negosiasi putaran {run.negotiation.round}: total acuan {money(run.negotiation.best_total)} → target total {money(run.negotiation.target_total)} (10% lebih rendah). Target harga per buah memperhitungkan biaya selain barang dari masing-masing vendor.</p>}<table className="w-full min-w-[850px] text-left text-sm"><thead className="border-b border-gray-200 bg-[#EAECEF] text-xs uppercase text-gray-700"><tr>{["Vendor", "Hasil", "Stok", "Harga awal / buah", "Harga akhir / buah", "Negosiasi", "Tawaran harga"].map(h => <th key={h} className="px-3 py-3">{h}</th>)}</tr></thead><tbody>{run.vendors.map(v => <tr key={v.vendor_id} className="border-b border-slate-100"><td className="px-3 py-4 font-semibold">{v.vendor_id}</td><td className="px-3 py-4">{run.transport === "whatsapp" && v.outcome === "pending" ? "Menunggu penawaran lengkap" : label(v.outcome)}</td><td className="px-3 py-4">{v.outcome === "no_stock" ? "0" : stockQuantity(v.quote?.qty_available)}</td><td className="px-3 py-4">{money(v.initial_quote?.unit_price)}</td><td className="px-3 py-4">{money(v.quote?.unit_price)}</td><td className="px-3 py-4"><p>{negotiationStatus(run, v)}</p>{run.negotiation?.vendors.find(plan => plan.vendor_id === v.vendor_id)?.target_unit_price && <p className="mt-1 text-xs text-gray-500">Target {money(run.negotiation.vendors.find(plan => plan.vendor_id === v.vendor_id)?.target_unit_price)} / buah</p>}</td><td className="px-3 py-4">{v.counteroffers_used} / 1</td></tr>)}</tbody></table></section>}

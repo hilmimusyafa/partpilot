@@ -1,16 +1,22 @@
 # Hasil implementasi dan pengujian PartPilot
 
-Tanggal pengujian: **23 Oktober 2026 WIB**. [Buka demo conveyor makanan](https://partpilot.rifqisetiawan.my.id/maintenance/).
+Tanggal pengujian: **23 Oktober 2026 WIB**. [Buka PartPilot](https://partpilot.rifqisetiawan.my.id/).
 
 ## Release dan data aktif
 
-- VPS tetap menjadi host. `current-demo` menunjuk ke `releases/evidence-20261023-r4`.
-- API dan worker memakai image `partpilot-demo:20261023-evidence-r4`; bridge WhatsApp tetap memakai image yang sudah ada.
+- VPS tetap menjadi host. `current-demo` menunjuk ke `releases/main-20261023-r6`.
+- API dan worker memakai image `partpilot-demo:20261023-main-r6`; bridge WhatsApp tetap memakai image yang sudah ada.
 - Backup database dan konfigurasi dibuat sebelum migrasi, di direktori privat `private/before-evidence-20261022T205803Z` pada root PartPilot VPS. Credential tidak dimasukkan ke dokumen atau repository.
 - Migration020–023 terpasang. API publik telah mengembalikan **10 record bukti**, dengan URL sumber dan SHA-256; seluruhnya `is_local_asset_history=false`.
 - Provider aktif **9router** sesuai revisi pengguna. Adapter Vertex tersedia, tetapi autentikasi dan pengujian live project `hackathon-primestep-16` belum dilakukan.
 
 ## Pengujian otomatis
+
+Pembaruan halaman utama pada release **main-20261023-r6**: alur maintenance tampil langsung di `/` dan `/technician/`; `/maintenance/` lama mengalihkan ke beranda. Menu halaman demo dan reset dihapus dari navigasi. Meja manajer mendukung benchmark conveyor makanan dengan pengakuan asumsi eksplisit; perubahan penawaran memerlukan pembaruan perbandingan sehingga tidak memakai kalkulator lama tanpa persetujuan.
+
+Build frontend (13 halaman statis), TypeScript, lint, dan 34 tes identitas lulus. Uji browser pada beranda menghasilkan assessment `7a7325b6-b132-4696-9c1e-874c19a0594c` dengan empat tool calls, kemudian WO `728dc425-2ae9-44d8-a299-0edebdce6b04` berstatus `identified`. WO dibuka di meja manajer, lima gudang tampil, dan perhitungan benchmark melalui UI berhasil. Tidak ada WhatsApp yang dikirim pada uji perubahan halaman ini.
+
+Uji pertama menemukan jawaban model dengan normalisasi kategori yang ditolak validator (`category_normalization_mismatch`). Instruksi ekstraksi diperjelas agar `value` dan `normalized_value` kategori persis `Bearing`; validasi tidak dilonggarkan. WO gagal `5395a618-ae96-4be0-ae73-9cfe050078be` tetap tersimpan sebagai audit. Uji ulang berhasil; model tetap dapat menghasilkan `needs_review` bila keluarannya tidak memenuhi kontrak.
 
 | Pemeriksaan | Hasil dan batas cakupan |
 |---|---|

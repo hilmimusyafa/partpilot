@@ -1,1 +1,1 @@
-export { default } from "@/components/work-order";
+export { default } from "@/components/maintenance-workspace";

@@ -37,6 +37,8 @@ export function useLiveComparison(state: LiveState) {
         if (next.decision) current.setSelected(next.decision.option_id);
         if (current.selected || next.decision) { setError(""); return; }
         if (current.busy || current.confirm || requestInFlight.current) return;
+        // Food benchmarks require explicit manager acknowledgment before calculation.
+        if (next.identity.unit_scope === "complete_housed_unit" && (!current.comparison || current.comparison.source_run_version !== next.version)) { setError(""); return; }
         requestInFlight.current = true;
         try {
           let result: Comparison;

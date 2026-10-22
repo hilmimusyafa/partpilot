@@ -2,7 +2,7 @@
 
 PartPilot membantu teknisi dan manajer maintenance mencari spare part dari gudang sendiri, gudang lain, dan vendor. Demo utama memakai conveyor makanan setelah washdown: **gejala → bukti OEM → dugaan penyebab dan pemeriksaan → konfirmasi part/WO → sumber pengadaan → biaya pemulihan → keputusan manajer**.
 
-[Demo conveyor makanan](https://partpilot.rifqisetiawan.my.id/maintenance/) · [Panduan singkat](docs/demo-guide.md) · [Data dan Agentic AI](docs/data-and-agentic-ai.md) · [Hasil pengujian](docs/verification-results.md) · [API maintenance](backend/maintenance/README.md).
+[Buka PartPilot](https://partpilot.rifqisetiawan.my.id/) · [Panduan singkat](docs/demo-guide.md) · [Data dan Agentic AI](docs/data-and-agentic-ai.md) · [Hasil pengujian](docs/verification-results.md) · [API maintenance](backend/maintenance/README.md).
 
 ## Data asli dan simulasi
 

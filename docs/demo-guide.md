@@ -2,7 +2,7 @@
 
 **Story satu kalimat:** “Conveyor makanan bising setelah washdown; PartPilot memakai kasus dan katalog OEM untuk membantu inspeksi, menyiapkan WO, lalu memilih sumber part dengan mempertimbangkan waktu pulih dan estimasi kerugian produksi.”
 
-1. Buka [Demo conveyor makanan](https://partpilot.rifqisetiawan.my.id/maintenance/). Pakai gejala bawaan, marking **RHP PSF20CR**, jumlah **2**, dan nama teknisi demo.
+1. Buka [beranda PartPilot](https://partpilot.rifqisetiawan.my.id/). Pakai gejala bawaan, marking **RHP PSF20CR**, jumlah **2**, dan nama teknisi demo.
 2. Klik **Analisis dengan AI dan bukti OEM**. Tunjukkan hipotesis, pemeriksaan, tool calls, serta tautan dokumen. Kasus OEM adalah preseden eksternal, bukan riwayat mesin demo.
 3. Centang konfirmasi marking/BOM dan kebutuhan penggantian. Klik **Buat / buka WO part exact**. Setelah `identified`, cari gudang. Fixture: asal kosong, gudang lain punya dua unit exact.
 4. Pilih **satu jalur vendor**: simulator atau tombol **RFQ WhatsApp** ke 082178830078. Jangan menjalankan simulator dahulu jika akan memakai WhatsApp pada run yang sama. Isi form yang diterima; harga/ETA adalah data pengujian.
@@ -84,3 +84,5 @@ Klik **Catat persetujuan engineering**, centang konfirmasi skenario, lalu **Cari
 Jika ingin menguji WhatsApp pada cabang kandidat, ganti hanya baris kode pada form menjadi `Merek dan nomor kode : RHP PSF20/LP99` dan gunakan jalur WhatsApp saja pada run tersebut. Balasan exact PSF20CR tidak boleh dipakai sebagai penawaran kandidat.
 
 **Batas:** stok/harga/ETA/operasi simulasi; ISO mata uang benchmark tidak diketahui dan pemetaan rupiah bukan kurs nyata; tidak ada prediksi umur bearing atau tanggal kegagalan. Provider aktif 9router; Vertex project `hackathon-primestep-16` menunggu credential.
+
+Alur kini tersedia di beranda dan halaman Teknisi. Meja manajer membuka WO yang sama. Alamat `/maintenance/` lama mengarahkan ke beranda; tidak ada menu halaman demo atau tombol reset pada navigasi utama. Label sumber dan asumsi simulasi tetap ditampilkan.

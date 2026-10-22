@@ -626,6 +626,8 @@ def process_job(job: Dict[str, Any]) -> Dict[str, Any]:
         "CRITICAL: 'raw_substring' must be an exact, case-sensitive substring found verbatim in the referenced source.\n"
         "For category Bearing, prefer the shortest explicit source token 'bearing' or 'laher' as evidence; "
         "a verbatim noun phrase such as 'bearing unit flange' is also supported. "
+        "For the category fact, value and evidence.normalized_value MUST both be exactly 'Bearing'. "
+        "Do not use 'bearing unit', 'flange bearing', 'Bearing Unit', 'laher', or the raw source phrase as the normalized category. "
         "Never infer the category from incidental or negated bearing mentions. "
         "For bearing NTN 6200LLU, extract brand NTN, base 6200, suffix LLU separately. "
         "For RHP PSF20CR or RHP PSF20/LP99 complete bearing units, extract brand RHP and full_designation PSF20CR or PSF20/LP99; do not split these into base/suffix. "
